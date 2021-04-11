@@ -1,0 +1,29 @@
+plugins {
+    id 'application'
+}
+
+group 'com.athaydes.geminix'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.1'
+}
+
+application {
+    mainModule = 'geminix.cli'
+    mainClass = 'com.athaydes.geminix.Geminix'
+    applicationDefaultJvmArgs = ['--enable-preview']
+}
+
+tasks.withType(JavaCompile) {
+    options.javaModuleVersion = provider { project.version }
+    options.compilerArgs.add('--enable-preview')
+}
+
+tasks.withType(Test) {
+    jvmArgs += "--enable-preview"
+}
