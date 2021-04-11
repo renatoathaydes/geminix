@@ -31,13 +31,15 @@ public class Client {
     }
 
     public void sendRequest(URI target, ResponseErrorHandler errorHandler) {
-        System.out.println("URI: " + target);
         errorHandler.run(() -> send(target)).ifPresent(response -> {
             if (response instanceof Response.Input input) {
                 userInteractionManager.promptUser(input.prompt(), (userAnswer) -> {
                     var newTarget = appendQuery(target, userAnswer);
                     sendRequest(newTarget, errorHandler);
                 });
+            } else {
+                // TODO handle redirects
+                userInteractionManager.showResponse(response);
             }
         });
     }

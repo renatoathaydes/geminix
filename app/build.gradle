@@ -20,6 +20,7 @@ application {
 }
 
 tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
     options.javaModuleVersion = provider { project.version }
     options.compilerArgs.add('--enable-preview')
 }
