@@ -20,22 +20,25 @@ public class Client {
         this(userInteractionManager, TlsSocketFactory.defaultFactory());
     }
 
-    public Client(UserInteractionManager userInteractionManager, TlsSocketFactory socketFactory) {
+    public Client(UserInteractionManager userInteractionManager,
+                  TlsSocketFactory socketFactory) {
         this(userInteractionManager, socketFactory, new ResponseParser());
     }
 
-    public Client(UserInteractionManager userInteractionManager, TlsSocketFactory socketFactory, ResponseParser responseParser) {
+    public Client(UserInteractionManager userInteractionManager,
+                  TlsSocketFactory socketFactory,
+                  ResponseParser responseParser) {
         this.userInteractionManager = userInteractionManager;
         this.socketFactory = socketFactory;
         this.responseParser = responseParser;
     }
 
-    public void sendRequest(URI target, ResponseErrorHandler errorHandler) {
-        errorHandler.run(() -> send(target)).ifPresent(response -> {
+    public void sendRequest(URI target) {
+        userInteractionManager.run(() -> send(target)).ifPresent(response -> {
             if (response instanceof Response.Input input) {
                 userInteractionManager.promptUser(input.prompt(), (userAnswer) -> {
                     var newTarget = appendQuery(target, userAnswer);
-                    sendRequest(newTarget, errorHandler);
+                    sendRequest(newTarget);
                 });
             } else {
                 // TODO handle redirects
@@ -48,7 +51,10 @@ public class Client {
         if (target.getUserInfo() != null) {
             throw new IllegalArgumentException("URI must not contain userInfo component");
         }
-        try (var socket = socketFactory.create(target.getHost(), target.getPort())) {
+
+        userInteractionManager.beforeRequest(target);
+
+        try (var socket = socketFactory.create(target.getHost(), target.getPort(), userInteractionManager)) {
             var in = socket.getInputStream();
             var out = socket.getOutputStream();
 
@@ -61,6 +67,5 @@ public class Client {
         out.write(object.toString().getBytes(StandardCharsets.UTF_8));
         out.write(CRLF);
     }
-
 
 }

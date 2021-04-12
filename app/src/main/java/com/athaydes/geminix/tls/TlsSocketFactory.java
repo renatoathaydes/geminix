@@ -8,7 +8,7 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 
 public interface TlsSocketFactory {
-    SSLSocket create(String host, int port) throws IOException;
+    SSLSocket create(String host, int port, TlsManager tlsManager) throws IOException;
 
     static TlsSocketFactory defaultFactory() {
         return DefaultTlsSocketFactory.INSTANCE;
@@ -18,7 +18,7 @@ public interface TlsSocketFactory {
 
         private static final String[] PROTOCOLS = new String[]{"TLSv1.2", "TLSv1.3"};
 
-        private static final TlsSocketFactory INSTANCE = new DefaultTlsSocketFactory();
+        private static final DefaultTlsSocketFactory INSTANCE = new DefaultTlsSocketFactory();
 
         private final SSLContext sslContext;
 
@@ -26,15 +26,16 @@ public interface TlsSocketFactory {
             SSLContext sslContext;
             try {
                 sslContext = SSLContext.getInstance("TLS");
-                var myTrustManager = new TofuTrustManager();
-                sslContext.init(null, new TrustManager[]{myTrustManager}, null);
+                sslContext.init(null, new TrustManager[]{TofuTrustManager.getInstance()}, null);
             } catch (NoSuchAlgorithmException | KeyManagementException e) {
                 throw new IllegalStateException(e);
             }
             this.sslContext = sslContext;
         }
 
-        public SSLSocket create(String host, int port) throws IOException {
+        public SSLSocket create(String host, int port, TlsManager tlsManager) throws IOException {
+            tlsManager.setState(new TlsManager.State(host));
+            TofuTrustManager.getInstance().setTlsManager(tlsManager);
             var socket = (SSLSocket) sslContext.getSocketFactory()
                     .createSocket(host, port);
             socket.setEnabledProtocols(PROTOCOLS);
