@@ -1,0 +1,30 @@
+plugins {
+    id 'java-library'
+}
+
+group 'com.athaydes.geminix'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation libs.junit5.api
+    testImplementation libs.junit5.params
+    testRuntimeOnly libs.junit5.engine
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.javaModuleVersion = provider { project.version }
+    options.compilerArgs.add('--enable-preview')
+}
+
+tasks.withType(Test) {
+    jvmArgs += "--enable-preview"
+}

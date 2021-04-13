@@ -1,0 +1,37 @@
+plugins {
+    id 'application'
+}
+
+group 'com.athaydes.geminix'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(':gemini-client')
+    testImplementation libs.junit5.api
+    testImplementation libs.junit5.params
+    testRuntimeOnly libs.junit5.engine
+}
+
+test {
+    useJUnitPlatform()
+}
+
+application {
+    mainModule = 'geminix.terminal'
+    mainClass = 'com.athaydes.geminix.terminal.Geminix'
+    applicationDefaultJvmArgs = ['--enable-preview']
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.javaModuleVersion = provider { project.version }
+    options.compilerArgs.add('--enable-preview')
+}
+
+tasks.withType(Test) {
+    jvmArgs += "--enable-preview"
+}

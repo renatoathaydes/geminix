@@ -8,4 +8,6 @@
  */
 
 rootProject.name = 'geminix'
-include('app')
+include 'gemini-client', 'gemini-terminal'
+
+enableFeaturePreview("VERSION_CATALOGS")
