@@ -48,6 +48,7 @@ public class Client {
                 userInteractionManager.promptUser(input.prompt(), (userAnswer) -> {
                     var newTarget = appendQuery(target, userAnswer);
                     sendRequest(newTarget);
+                    return true;
                 });
             } else if (response instanceof Response.Redirect redirect) {
                 try {
@@ -68,8 +69,8 @@ public class Client {
 
         userInteractionManager.beforeRequest(target);
 
-        try (var socket = socketFactory.create(target.getHost(), target.getPort(),
-                userInteractionManager.getTlsManager())) {
+        try (var socket = socketFactory.create(
+                target.getHost(), target.getPort(), userInteractionManager.getTlsManager())) {
             var in = socket.getInputStream();
             var out = socket.getOutputStream();
 

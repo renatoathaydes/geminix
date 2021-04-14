@@ -8,7 +8,7 @@ import com.athaydes.geminix.tls.TlsManager;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
-import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public final class CommandLineUserInteractionManager implements UserInteractionManager {
 
@@ -36,11 +36,14 @@ public final class CommandLineUserInteractionManager implements UserInteractionM
     }
 
     @Override
-    public void promptUser(String message, Consumer<String> onResponse) {
-        System.out.println("PROMPT: " + message);
-        var scanner = new Scanner(System.in, StandardCharsets.UTF_8);
-        var userResponse = scanner.nextLine();
-        onResponse.accept(userResponse);
+    public void promptUser(String message, Predicate<String> acceptResponse) {
+        var done = false;
+        do {
+            System.out.println("PROMPT: " + message);
+            var scanner = new Scanner(System.in, StandardCharsets.UTF_8);
+            var userResponse = scanner.nextLine();
+            done = acceptResponse.test(userResponse);
+        } while (!done);
     }
 
     @Override
@@ -51,6 +54,8 @@ public final class CommandLineUserInteractionManager implements UserInteractionM
             System.out.println("Media Type: " + success.mediaType());
             if (success.mediaType().startsWith("text/")) {
                 System.out.println(new String(success.body(), StandardCharsets.UTF_8));
+            } else {
+                System.out.println("TODO : cannot yet handle non-textual media-type");
             }
         } else if (response instanceof Response.ClientCertRequired clientCertRequired) {
             System.out.println("ERROR: " + clientCertRequired.userMessage());

@@ -1,10 +1,13 @@
 package com.athaydes.geminix.tls;
 
 import javax.net.ssl.X509TrustManager;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateExpiredException;
-import java.security.cert.CertificateNotYetValidException;
-import java.security.cert.X509Certificate;
+import java.security.cert.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Trust-On-First-Use Certificate Trust Manager.
@@ -42,26 +45,44 @@ final class TofuTrustManager implements X509TrustManager {
             throw new CertificateException("No certificate presented");
         }
 
-        var certificateStatus = "";
+        var certificateValidity = TlsManager.CertificateValidity.VALID;
 
         try {
             chain[0].checkValidity();
         } catch (CertificateExpiredException ignore) {
-            certificateStatus = "Expired";
+            certificateValidity = TlsManager.CertificateValidity.EXPIRED;
         } catch (CertificateNotYetValidException ignore) {
-            certificateStatus = "NotYetValid";
+            certificateValidity = TlsManager.CertificateValidity.NOT_YET_VALID;
         }
 
-        var hostStatus = "";
+        var certificateNames = collectCertificateNames(chain[0]);
+        var hostInformation = new TlsManager.HostInformation(cm.getState().currentHost(), certificateNames);
 
-        var certificateSubject = chain[0].getSubjectX500Principal().getName();
+        cm.handleCertificate(chain[0], certificateValidity, hostInformation);
+    }
 
-        if (!certificateSubject.equals(cm.getState().currentHost())) {
-            hostStatus = "WARNING: Certificate issued for '" + certificateSubject +
-                    "', but expected host is '" + cm.getState().currentHost() + "'";
+    private Set<String> collectCertificateNames(X509Certificate certificate) throws CertificateParsingException {
+        var certificateCN = certificate.getSubjectX500Principal().getName();
+        var alternativeNames = getAlternativeNames(certificate);
+        return Stream.concat(
+                Stream.of(certificateCN),
+                alternativeNames.stream()
+        ).collect(toSet());
+    }
+
+    private List<String> getAlternativeNames(X509Certificate certificate) throws CertificateParsingException {
+        var alternativeNames = new ArrayList<String>(4);
+        var altNamesExtension = certificate.getSubjectAlternativeNames();
+        if (altNamesExtension != null) {
+            for (List<?> altName : altNamesExtension) {
+                var name = altName.get(1);
+                // the name entry may be a String or a DER-encoded byte-array
+                if (name instanceof String nameStr) {
+                    alternativeNames.add(nameStr);
+                }
+            }
         }
-
-        cm.handleCertificate(chain[0], certificateStatus, hostStatus);
+        return alternativeNames;
     }
 
     @Override

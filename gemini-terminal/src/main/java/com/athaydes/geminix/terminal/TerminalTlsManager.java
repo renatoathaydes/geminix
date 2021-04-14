@@ -19,33 +19,68 @@ final class TerminalTlsManager extends TlsManager {
     }
 
     @Override
-    public void handleCertificate(X509Certificate certificate, String certificateStatus, String hostStatus) {
+    public void handleCertificate(X509Certificate certificate,
+                                  CertificateValidity certificateValidity,
+                                  HostInformation hostInformation) {
         var encodedKey = certificate.getPublicKey().getEncoded();
         var subject = certificate.getSubjectX500Principal().getName();
+
+        var hostStatus = "";
+        if (!hostInformation.hostMatchesCertificateNames()) {
+            hostStatus = "WARNING: Certificate issued for '" + hostInformation.certificateSubjectNames() +
+                    "', but expected host is '" + hostInformation.connectionHost() + "'";
+        }
+
         var cachedPubKey = certificatePublicKeyByHost.get(subject);
 
-        if (cachedPubKey != null && certificateStatus.isEmpty() && hostStatus.isEmpty()) {
+        if (cachedPubKey != null
+                && certificateValidity == CertificateValidity.VALID
+                && hostStatus.isEmpty()) {
             if (Arrays.equals(encodedKey, cachedPubKey)) {
-                System.out.println("TLS Certificate approved");
                 return;
             } else {
-                System.out.println("ERROR: TLS Certificate for this host has been modified!");
+                System.out.println("WARNING: TLS Certificate for this host is not the same as last seen!");
             }
         }
 
-        System.out.println("-------------------------");
-        System.out.println("NEW Certificate: " + certificate);
-        System.out.println("Status: " + (certificateStatus.isEmpty() ? "OK" : certificateStatus));
-        System.out.println("Host: " + (hostStatus.isEmpty() ? "OK" : hostStatus));
-        System.out.println("-------------------------");
+        if (cachedPubKey == null) {
+            System.out.println("INFO: First time accessing this host.");
+        }
+        if (!hostStatus.isEmpty()) {
+            System.out.println(hostStatus);
+        }
+        if (certificateValidity != CertificateValidity.VALID) {
+            System.out.println("WARNING: Certificate expiration status is " + certificateValidity);
+        }
 
-        userInteractionManager.promptUser("Do you want to accept the above certificate? [y/n]", (answer) -> {
-            if (answer.toLowerCase(Locale.ROOT).trim().equals("y")) {
-                certificatePublicKeyByHost.put(subject, encodedKey);
-            } else {
-                System.out.println("Aborting request");
-                throw new RuntimeException("Server Certificate was not accepted");
+        userInteractionManager.promptUser("""
+                Do you want to accept and store the host certificate?
+                    (1) Yes
+                    (2) No
+                    (3) Show Certificate""", (answer) -> {
+            var option = answer.toLowerCase(Locale.ROOT).trim();
+
+            switch (option) {
+                case "1" -> {
+                    certificatePublicKeyByHost.put(hostInformation.connectionHost(), encodedKey);
+                    return true;
+                }
+                case "2" -> throw new RuntimeException("Server Certificate was not accepted");
+                case "3" -> {
+                    showCertificate(certificate);
+                    return false;
+                }
+                default -> {
+                    System.out.println("ERROR: Please enter a valid option.");
+                    return false;
+                }
             }
         });
+    }
+
+    private static void showCertificate(X509Certificate certificate) {
+        System.out.println("-------------------------");
+        System.out.println("Certificate: " + certificate);
+        System.out.println("-------------------------");
     }
 }
