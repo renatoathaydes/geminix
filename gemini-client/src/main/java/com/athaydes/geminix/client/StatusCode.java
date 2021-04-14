@@ -1,6 +1,6 @@
 package com.athaydes.geminix.client;
 
-enum StatusCode {
+public enum StatusCode {
     INPUT_10,
     SENSITIVE_INPUT_11,
     SUCCESS_20,
