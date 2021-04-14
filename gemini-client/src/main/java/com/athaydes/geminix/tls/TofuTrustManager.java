@@ -6,6 +6,9 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
 
+/**
+ * Trust-On-First-Use Certificate Trust Manager.
+ */
 final class TofuTrustManager implements X509TrustManager {
 
     private static final TofuTrustManager INSTANCE = new TofuTrustManager();
@@ -34,6 +37,9 @@ final class TofuTrustManager implements X509TrustManager {
 
         if (cm == null) {
             throw new IllegalStateException("CertificateManager has not been set on TofuTrustManager");
+        }
+        if (chain.length == 0) {
+            throw new CertificateException("No certificate presented");
         }
 
         var certificateStatus = "";

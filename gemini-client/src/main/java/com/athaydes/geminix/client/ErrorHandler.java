@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Optional;
 
-public interface ResponseErrorHandler {
+public interface ErrorHandler {
 
     <T> Optional<T> run(Action<T> action);
 

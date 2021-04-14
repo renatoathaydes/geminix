@@ -18,7 +18,7 @@ public final class Geminix {
 
             var client = new Client(uim);
 
-            uim.run(() -> {
+            uim.getResponseErrorHandler().run(() -> {
                 client.sendRequest(userAnswer);
                 return null;
             });

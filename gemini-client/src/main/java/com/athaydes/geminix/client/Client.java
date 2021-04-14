@@ -36,14 +36,14 @@ public class Client {
     }
 
     public void sendRequest(String uri) {
-        userInteractionManager.run(() -> {
+        userInteractionManager.getResponseErrorHandler().run(() -> {
             sendRequest(UriHelper.geminify(uri));
             return null;
         });
     }
 
     private void sendRequest(URI target) {
-        userInteractionManager.run(() -> send(target)).ifPresent(response -> {
+        userInteractionManager.getResponseErrorHandler().run(() -> send(target)).ifPresent(response -> {
             if (response instanceof Response.Input input) {
                 userInteractionManager.promptUser(input.prompt(), (userAnswer) -> {
                     var newTarget = appendQuery(target, userAnswer);
@@ -68,7 +68,8 @@ public class Client {
 
         userInteractionManager.beforeRequest(target);
 
-        try (var socket = socketFactory.create(target.getHost(), target.getPort(), userInteractionManager)) {
+        try (var socket = socketFactory.create(target.getHost(), target.getPort(),
+                userInteractionManager.getTlsManager())) {
             var in = socket.getInputStream();
             var out = socket.getOutputStream();
 
