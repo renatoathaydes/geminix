@@ -9,12 +9,16 @@ public final class Geminix {
         var uim = CommandLineUserInteractionManager.INSTANCE;
         var client = new Client(uim);
 
-        uim.promptUser("Enter a URL or 'quit' to exit:", (answer) -> {
-            uim.getResponseErrorHandler().run(() -> {
-                client.sendRequest(answer);
-                return null;
-            });
-            return answer.trim().equals("quit");
+        uim.promptUser("Enter a URL or 'quit' to exit:", (userAnswer) -> {
+            var answer = userAnswer.trim();
+            var done = answer.equals("quit");
+            if (!done && !answer.isEmpty()) {
+                uim.getResponseErrorHandler().run(() -> {
+                    client.sendRequest(answer);
+                    return null;
+                });
+            }
+            return done;
         });
     }
 
