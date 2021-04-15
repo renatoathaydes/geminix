@@ -83,7 +83,7 @@ final class TofuTrustManager implements X509TrustManager {
         ).collect(toSet());
     }
 
-    static List<String> getAlternativeNames(X509Certificate certificate) throws CertificateParsingException {
+    private static List<String> getAlternativeNames(X509Certificate certificate) throws CertificateParsingException {
         var alternativeNames = new ArrayList<String>(4);
         var altNamesExtension = certificate.getSubjectAlternativeNames();
         if (altNamesExtension != null) {
