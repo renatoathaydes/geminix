@@ -1,12 +1,17 @@
 package com.athaydes.geminix.tls;
 
 import javax.net.ssl.X509TrustManager;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.cert.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -45,6 +50,13 @@ final class TofuTrustManager implements X509TrustManager {
             throw new CertificateException("No certificate presented");
         }
 
+        try {
+            Files.write(Paths.get("gemini.cert"), chain[0].getEncoded());
+            System.out.println("Stored cert in " + Paths.get("gemini.cert").toFile().getAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         var certificateValidity = TlsManager.CertificateValidity.VALID;
 
         try {
@@ -61,8 +73,9 @@ final class TofuTrustManager implements X509TrustManager {
         cm.handleCertificate(chain[0], certificateValidity, hostInformation);
     }
 
-    private Set<String> collectCertificateNames(X509Certificate certificate) throws CertificateParsingException {
-        var certificateCN = certificate.getSubjectX500Principal().getName();
+    static Set<String> collectCertificateNames(X509Certificate certificate) throws CertificateParsingException {
+        var certificateName = certificate.getSubjectX500Principal().getName();
+        var certificateCN = parseCertificateName(certificateName).get("CN");
         var alternativeNames = getAlternativeNames(certificate);
         return Stream.concat(
                 Stream.of(certificateCN),
@@ -70,7 +83,7 @@ final class TofuTrustManager implements X509TrustManager {
         ).collect(toSet());
     }
 
-    private List<String> getAlternativeNames(X509Certificate certificate) throws CertificateParsingException {
+    static List<String> getAlternativeNames(X509Certificate certificate) throws CertificateParsingException {
         var alternativeNames = new ArrayList<String>(4);
         var altNamesExtension = certificate.getSubjectAlternativeNames();
         if (altNamesExtension != null) {
@@ -83,6 +96,13 @@ final class TofuTrustManager implements X509TrustManager {
             }
         }
         return alternativeNames;
+    }
+
+    static Map<String, String> parseCertificateName(String value) {
+        return Stream.of(value.split("\\s*,\\s*", 12))
+                .map(part -> part.split("\\s*=\\s*", 2))
+                .filter(entry -> entry.length == 2 && (!entry[0].isEmpty() || !entry[1].isEmpty()))
+                .collect(toMap(entry -> entry[0], entry -> entry[1]));
     }
 
     @Override
