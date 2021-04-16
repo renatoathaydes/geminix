@@ -18,6 +18,12 @@ public final class Geminix {
                     return null;
                 });
             }
+            if (done) {
+                uim.getResponseErrorHandler().run(() -> {
+                    uim.close();
+                    return null;
+                });
+            }
             return done;
         });
     }

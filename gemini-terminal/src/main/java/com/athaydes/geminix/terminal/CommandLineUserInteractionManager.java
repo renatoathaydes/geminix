@@ -6,22 +6,41 @@ import com.athaydes.geminix.client.UserInteractionManager;
 import com.athaydes.geminix.terminal.tls.CachedTlsCertificateStorage;
 import com.athaydes.geminix.tls.FileTlsCertificateStorage;
 import com.athaydes.geminix.tls.TlsManager;
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.util.Scanner;
 import java.util.function.Predicate;
 
-public final class CommandLineUserInteractionManager implements UserInteractionManager {
+public final class CommandLineUserInteractionManager
+        implements UserInteractionManager, Closeable, AutoCloseable {
 
     static final CommandLineUserInteractionManager INSTANCE = new CommandLineUserInteractionManager();
 
     private final ErrorHandler errorHandler;
     private final TlsManager tlsManager;
+    private final Terminal terminal;
+    private final LineReader lineReader;
 
     private CommandLineUserInteractionManager() {
         this.errorHandler = new TerminalErrorHandler();
+
+        try {
+            this.terminal = TerminalBuilder.terminal();
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to initialize terminal", e);
+        }
+
+        this.lineReader = LineReaderBuilder.builder()
+                .terminal(terminal)
+                .appName("geminix")
+                .build();
 
         var fileStorage = new FileTlsCertificateStorage(Paths.get("certs"));
         var tlsCertificateStorage = new CachedTlsCertificateStorage(fileStorage, errorHandler);
@@ -48,9 +67,8 @@ public final class CommandLineUserInteractionManager implements UserInteractionM
     public void promptUser(String message, Predicate<String> acceptResponse) {
         var done = false;
         do {
-            System.out.println("PROMPT: " + message);
-            var scanner = new Scanner(System.in, StandardCharsets.UTF_8);
-            var userResponse = scanner.nextLine();
+            System.out.println("GeminiX: " + message);
+            var userResponse = lineReader.readLine("> ");
             done = acceptResponse.test(userResponse);
         } while (!done);
     }
@@ -75,4 +93,8 @@ public final class CommandLineUserInteractionManager implements UserInteractionM
         }
     }
 
+    @Override
+    public void close() throws IOException {
+        terminal.close();
+    }
 }
