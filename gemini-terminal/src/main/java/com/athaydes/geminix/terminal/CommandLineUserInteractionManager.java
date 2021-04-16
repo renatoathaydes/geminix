@@ -3,10 +3,13 @@ package com.athaydes.geminix.terminal;
 import com.athaydes.geminix.client.ErrorHandler;
 import com.athaydes.geminix.client.Response;
 import com.athaydes.geminix.client.UserInteractionManager;
+import com.athaydes.geminix.terminal.tls.CachedTlsCertificateStorage;
+import com.athaydes.geminix.tls.FileTlsCertificateStorage;
 import com.athaydes.geminix.tls.TlsManager;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.Scanner;
 import java.util.function.Predicate;
 
@@ -14,10 +17,16 @@ public final class CommandLineUserInteractionManager implements UserInteractionM
 
     static final CommandLineUserInteractionManager INSTANCE = new CommandLineUserInteractionManager();
 
-    private final TlsManager tlsManager = new TerminalTlsManager(this);
-    private final ErrorHandler errorHandler = new TerminalErrorHandler();
+    private final ErrorHandler errorHandler;
+    private final TlsManager tlsManager;
 
     private CommandLineUserInteractionManager() {
+        this.errorHandler = new TerminalErrorHandler();
+
+        var fileStorage = new FileTlsCertificateStorage(Paths.get("certs"));
+        var tlsCertificateStorage = new CachedTlsCertificateStorage(fileStorage, errorHandler);
+
+        this.tlsManager = new TerminalTlsManager(this, tlsCertificateStorage);
     }
 
     @Override
@@ -58,7 +67,7 @@ public final class CommandLineUserInteractionManager implements UserInteractionM
                 System.out.println("TODO : cannot yet handle non-textual media-type");
             }
         } else if (response instanceof Response.ClientCertRequired clientCertRequired) {
-            System.out.println("ERROR: " + clientCertRequired.userMessage());
+            System.out.println("ERROR: (client certificate is not yet supported) - " + clientCertRequired.userMessage());
         } else if (response instanceof Response.PermanentFailure failure) {
             System.out.println("ERROR: " + failure.errorMessage());
         } else if (response instanceof Response.TemporaryFailure failure) {

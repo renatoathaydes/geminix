@@ -1,21 +1,22 @@
 package com.athaydes.geminix.terminal;
 
 import com.athaydes.geminix.client.UserInteractionManager;
+import com.athaydes.geminix.terminal.tls.CachedTlsCertificateStorage;
 import com.athaydes.geminix.tls.TlsManager;
 
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 final class TerminalTlsManager extends TlsManager {
 
-    private final Map<String, byte[]> certificatePublicKeyByHost = new HashMap<>();
     private final UserInteractionManager userInteractionManager;
+    private final CachedTlsCertificateStorage tlsCertificateStorage;
 
-    public TerminalTlsManager(UserInteractionManager userInteractionManager) {
+    public TerminalTlsManager(UserInteractionManager userInteractionManager,
+                              CachedTlsCertificateStorage tlsCertificateStorage) {
         this.userInteractionManager = userInteractionManager;
+        this.tlsCertificateStorage = tlsCertificateStorage;
     }
 
     @Override
@@ -23,15 +24,18 @@ final class TerminalTlsManager extends TlsManager {
                                   CertificateValidity certificateValidity,
                                   HostInformation hostInformation) {
         var encodedKey = certificate.getPublicKey().getEncoded();
-        var subject = certificate.getSubjectX500Principal().getName();
+        var connectionHost = hostInformation.connectionHost();
 
         var hostStatus = "";
         if (!hostInformation.hostMatchesCertificateNames()) {
-            hostStatus = "WARNING: Certificate issued for '" + hostInformation.certificateSubjectNames() +
-                    "', but expected host is '" + hostInformation.connectionHost() + "'";
+            hostStatus = "WARNING: Host " + connectionHost +
+                    " presented a certificate issued for:\n" +
+                    "  " + hostInformation.certificateSubjectNames();
         }
 
-        var cachedPubKey = certificatePublicKeyByHost.get(subject);
+        var cachedPubKey = tlsCertificateStorage.load(connectionHost)
+                .map(cert -> cert.getPublicKey().getEncoded())
+                .orElse(null);
 
         if (cachedPubKey != null
                 && certificateValidity == CertificateValidity.VALID
@@ -39,7 +43,7 @@ final class TerminalTlsManager extends TlsManager {
             if (Arrays.equals(encodedKey, cachedPubKey)) {
                 return;
             } else {
-                System.out.println("WARNING: TLS Certificate for this host is not the same as last seen!");
+                System.out.println("WARNING: TLS Certificate for this host has been changed!");
             }
         }
 
@@ -53,8 +57,9 @@ final class TerminalTlsManager extends TlsManager {
             System.out.println("WARNING: Certificate expiration status is " + certificateValidity);
         }
 
+        System.out.println("Do you want to accept the certificate for host '" + connectionHost + "'?");
+
         userInteractionManager.promptUser("""
-                Do you want to accept and store the host certificate?
                     (1) Yes
                     (2) No
                     (3) Show Certificate""", (answer) -> {
@@ -62,7 +67,10 @@ final class TerminalTlsManager extends TlsManager {
 
             switch (option) {
                 case "1" -> {
-                    certificatePublicKeyByHost.put(hostInformation.connectionHost(), encodedKey);
+                    userInteractionManager.getResponseErrorHandler().run(() -> {
+                        tlsCertificateStorage.store(connectionHost, certificate);
+                        return null;
+                    });
                     return true;
                 }
                 case "2" -> throw new RuntimeException("Server Certificate was not accepted");
