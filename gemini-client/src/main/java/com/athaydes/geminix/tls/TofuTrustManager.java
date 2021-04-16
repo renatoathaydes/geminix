@@ -1,9 +1,6 @@
 package com.athaydes.geminix.tls;
 
 import javax.net.ssl.X509TrustManager;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.cert.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,13 +45,6 @@ final class TofuTrustManager implements X509TrustManager {
         }
         if (chain.length == 0) {
             throw new CertificateException("No certificate presented");
-        }
-
-        try {
-            Files.write(Paths.get("gemini.cert"), chain[0].getEncoded());
-            System.out.println("Stored cert in " + Paths.get("gemini.cert").toFile().getAbsolutePath());
-        } catch (IOException e) {
-            e.printStackTrace();
         }
 
         var certificateValidity = TlsManager.CertificateValidity.VALID;
