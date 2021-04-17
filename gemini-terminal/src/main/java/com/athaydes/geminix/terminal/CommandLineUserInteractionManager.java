@@ -101,7 +101,10 @@ public final class CommandLineUserInteractionManager
     }
 
     @Override
-    public void close() throws IOException {
-        terminal.close();
+    public void close() {
+        getErrorHandler().run(() -> {
+            terminal.close();
+            return null;
+        });
     }
 }

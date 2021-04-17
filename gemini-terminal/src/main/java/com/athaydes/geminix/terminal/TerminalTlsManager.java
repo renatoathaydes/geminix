@@ -59,7 +59,7 @@ final class TerminalTlsManager extends TlsManager {
         }
 
         userInteractionManager.promptUser("""
-                Do you want to accept the certificate for host '""" + connectionHost + "'?" + """
+                Do you want to accept the certificate for host '""" + connectionHost + "'?\n" + """
                 (1) Yes
                 (2) No
                 (3) Show Certificate""", (answer) -> {

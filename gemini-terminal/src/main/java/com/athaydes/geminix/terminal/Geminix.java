@@ -8,23 +8,21 @@ public final class Geminix {
         System.out.println("================== Geminix ==================");
         System.out.println("  https://github.com/renatoathaydes/geminix  ");
         System.out.println("=============================================");
+
         var uim = CommandLineUserInteractionManager.INSTANCE;
         var client = new Client(uim);
+        var commandHandler = new CommandHandler(uim.getPrinter());
 
-        uim.promptUser("Enter a URL or 'quit' to exit:", (userAnswer) -> {
+        uim.promptUser("Enter a URL or command (enter ' help' for help, ' quit' to exit):", (userAnswer) -> {
             var answer = userAnswer.trim();
-            var done = answer.equals("quit");
-            if (!done && !answer.isEmpty()) {
-                uim.getErrorHandler().run(() -> {
-                    client.sendRequest(answer);
-                    return null;
-                });
+            var done = false;
+            if (userAnswer.startsWith(" ")) {
+                done = commandHandler.handle(answer);
+            } else if (!answer.isEmpty()) {
+                client.sendRequest(answer);
             }
             if (done) {
-                uim.getErrorHandler().run(() -> {
-                    uim.close();
-                    return null;
-                });
+                uim.close();
             }
             return done;
         });
