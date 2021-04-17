@@ -6,18 +6,20 @@ import java.util.Optional;
 
 final class TerminalErrorHandler implements ErrorHandler {
 
+    private final TerminalPrinter printer;
+
+    TerminalErrorHandler(TerminalPrinter printer) {
+        this.printer = printer;
+    }
+
     @Override
     public <T> Optional<T> run(Action<T> action) {
         try {
             return Optional.ofNullable(action.run());
         } catch (Exception exception) {
-            error(exception.toString());
+            printer.error(exception.toString());
             return Optional.empty();
         }
-    }
-
-    static void error(String message) {
-        System.err.println("ERROR: " + message);
     }
 
 }

@@ -27,9 +27,11 @@ public final class CommandLineUserInteractionManager
     private final TlsManager tlsManager;
     private final Terminal terminal;
     private final LineReader lineReader;
+    private final TerminalPrinter printer;
 
     private CommandLineUserInteractionManager() {
-        this.errorHandler = new TerminalErrorHandler();
+        this.printer = new TerminalPrinter();
+        this.errorHandler = new TerminalErrorHandler(printer);
 
         try {
             this.terminal = TerminalBuilder.terminal();
@@ -58,38 +60,43 @@ public final class CommandLineUserInteractionManager
         return errorHandler;
     }
 
+    public TerminalPrinter getPrinter() {
+        return printer;
+    }
+
     @Override
     public void beforeRequest(URI target) {
-        System.out.println("Sending request to: " + target);
+        printer.info("Sending request to: " + target);
     }
 
     @Override
     public void promptUser(String message, Predicate<String> acceptResponse) {
         var done = false;
         do {
-            System.out.println("GeminiX: " + message);
-            var userResponse = lineReader.readLine("> ");
+            printer.prompt(message);
+            var userResponse = lineReader.readLine(printer.prompt());
             done = acceptResponse.test(userResponse);
         } while (!done);
     }
 
     @Override
     public void showResponse(Response response) {
-        System.out.println("Response status: " + response.statusCode().name());
+        printer.info("Response status: " + response.statusCode().name());
 
         if (response instanceof Response.Success success) {
-            System.out.println("Media Type: " + success.mediaType());
+            printer.info("Media Type: " + success.mediaType());
             if (success.mediaType().startsWith("text/")) {
+                System.out.println();
                 System.out.println(new String(success.body(), StandardCharsets.UTF_8));
             } else {
-                System.out.println("TODO : cannot yet handle non-textual media-type");
+                printer.error("TODO : cannot yet handle non-textual media-type");
             }
         } else if (response instanceof Response.ClientCertRequired clientCertRequired) {
-            System.out.println("ERROR: (client certificate is not yet supported) - " + clientCertRequired.userMessage());
+            printer.error("(client certificate is not yet supported) - " + clientCertRequired.userMessage());
         } else if (response instanceof Response.PermanentFailure failure) {
-            System.out.println("ERROR: " + failure.errorMessage());
+            printer.error(failure.errorMessage());
         } else if (response instanceof Response.TemporaryFailure failure) {
-            System.out.println("ERROR: " + failure.errorMessage());
+            printer.error(failure.errorMessage());
         }
     }
 

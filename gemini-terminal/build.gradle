@@ -11,7 +11,9 @@ repositories {
 
 dependencies {
     implementation project(':gemini-client')
-    implementation libs.jline
+    implementation libs.jlinereader
+    implementation libs.jlineterminal
+    implementation libs.jlinejansi
     testImplementation libs.junit5.api
     testImplementation libs.junit5.params
     testRuntimeOnly libs.junit5.engine

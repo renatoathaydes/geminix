@@ -1,6 +1,5 @@
 package com.athaydes.geminix.terminal;
 
-import com.athaydes.geminix.client.UserInteractionManager;
 import com.athaydes.geminix.terminal.tls.CachedTlsCertificateStorage;
 import com.athaydes.geminix.tls.TlsManager;
 
@@ -10,13 +9,15 @@ import java.util.Locale;
 
 final class TerminalTlsManager extends TlsManager {
 
-    private final UserInteractionManager userInteractionManager;
+    private final CommandLineUserInteractionManager userInteractionManager;
     private final CachedTlsCertificateStorage tlsCertificateStorage;
+    private final TerminalPrinter printer;
 
-    public TerminalTlsManager(UserInteractionManager userInteractionManager,
+    public TerminalTlsManager(CommandLineUserInteractionManager userInteractionManager,
                               CachedTlsCertificateStorage tlsCertificateStorage) {
         this.userInteractionManager = userInteractionManager;
         this.tlsCertificateStorage = tlsCertificateStorage;
+        this.printer = userInteractionManager.getPrinter();
     }
 
     @Override
@@ -28,7 +29,7 @@ final class TerminalTlsManager extends TlsManager {
 
         var hostStatus = "";
         if (!hostInformation.hostMatchesCertificateNames()) {
-            hostStatus = "WARNING: Host " + connectionHost +
+            hostStatus = "Host " + connectionHost +
                     " presented a certificate issued for:\n" +
                     "  " + hostInformation.certificateSubjectNames();
         }
@@ -43,26 +44,25 @@ final class TerminalTlsManager extends TlsManager {
             if (Arrays.equals(encodedKey, cachedPubKey)) {
                 return;
             } else {
-                System.out.println("WARNING: TLS Certificate for this host has been changed!");
+                printer.warn("TLS Certificate for this host has been changed!");
             }
         }
 
         if (cachedPubKey == null) {
-            System.out.println("INFO: First time accessing this host.");
+            printer.info("First time accessing this host.");
         }
         if (!hostStatus.isEmpty()) {
-            System.out.println(hostStatus);
+            printer.warn(hostStatus);
         }
         if (certificateValidity != CertificateValidity.VALID) {
-            System.out.println("WARNING: Certificate expiration status is " + certificateValidity);
+            printer.warn("Certificate expiration status is " + certificateValidity);
         }
 
-        System.out.println("Do you want to accept the certificate for host '" + connectionHost + "'?");
-
         userInteractionManager.promptUser("""
-                    (1) Yes
-                    (2) No
-                    (3) Show Certificate""", (answer) -> {
+                Do you want to accept the certificate for host '""" + connectionHost + "'?" + """
+                (1) Yes
+                (2) No
+                (3) Show Certificate""", (answer) -> {
             var option = answer.toLowerCase(Locale.ROOT).trim();
 
             switch (option) {
@@ -79,16 +79,16 @@ final class TerminalTlsManager extends TlsManager {
                     return false;
                 }
                 default -> {
-                    System.out.println("ERROR: Please enter a valid option.");
+                    printer.error("Please enter a valid option.");
                     return false;
                 }
             }
         });
     }
 
-    private static void showCertificate(X509Certificate certificate) {
-        System.out.println("-------------------------");
-        System.out.println("Certificate: " + certificate);
-        System.out.println("-------------------------");
+    private void showCertificate(X509Certificate certificate) {
+        printer.info("-------------------------");
+        printer.info("Certificate: " + certificate);
+        printer.info("-------------------------");
     }
 }
