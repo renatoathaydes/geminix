@@ -5,7 +5,9 @@ import com.athaydes.geminix.client.Client;
 public final class Geminix {
 
     public static void main(String[] args) {
-        System.out.println("== Geminix ==");
+        System.out.println("================== Geminix ==================");
+        System.out.println("  https://github.com/renatoathaydes/geminix  ");
+        System.out.println("=============================================");
         var uim = CommandLineUserInteractionManager.INSTANCE;
         var client = new Client(uim);
 
