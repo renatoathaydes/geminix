@@ -15,6 +15,6 @@ public interface UserInteractionManager {
 
     TlsManager getTlsManager();
 
-    ErrorHandler getResponseErrorHandler();
+    ErrorHandler getErrorHandler();
 
 }

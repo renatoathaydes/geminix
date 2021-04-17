@@ -36,14 +36,14 @@ public class Client {
     }
 
     public void sendRequest(String uri) {
-        userInteractionManager.getResponseErrorHandler().run(() -> {
+        userInteractionManager.getErrorHandler().run(() -> {
             sendRequest(UriHelper.geminify(uri));
             return null;
         });
     }
 
     private void sendRequest(URI target) {
-        userInteractionManager.getResponseErrorHandler().run(() -> send(target)).ifPresent(response -> {
+        userInteractionManager.getErrorHandler().run(() -> send(target)).ifPresent(response -> {
             if (response instanceof Response.Input input) {
                 userInteractionManager.promptUser(input.prompt(), (userAnswer) -> {
                     var newTarget = appendQuery(target, userAnswer);

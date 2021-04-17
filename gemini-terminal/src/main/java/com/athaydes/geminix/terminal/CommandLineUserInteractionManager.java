@@ -54,7 +54,7 @@ public final class CommandLineUserInteractionManager
     }
 
     @Override
-    public ErrorHandler getResponseErrorHandler() {
+    public ErrorHandler getErrorHandler() {
         return errorHandler;
     }
 

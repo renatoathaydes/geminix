@@ -13,13 +13,13 @@ public final class Geminix {
             var answer = userAnswer.trim();
             var done = answer.equals("quit");
             if (!done && !answer.isEmpty()) {
-                uim.getResponseErrorHandler().run(() -> {
+                uim.getErrorHandler().run(() -> {
                     client.sendRequest(answer);
                     return null;
                 });
             }
             if (done) {
-                uim.getResponseErrorHandler().run(() -> {
+                uim.getErrorHandler().run(() -> {
                     uim.close();
                     return null;
                 });

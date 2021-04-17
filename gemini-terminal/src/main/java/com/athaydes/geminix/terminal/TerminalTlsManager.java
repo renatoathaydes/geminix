@@ -67,7 +67,7 @@ final class TerminalTlsManager extends TlsManager {
 
             switch (option) {
                 case "1" -> {
-                    userInteractionManager.getResponseErrorHandler().run(() -> {
+                    userInteractionManager.getErrorHandler().run(() -> {
                         tlsCertificateStorage.store(connectionHost, certificate);
                         return null;
                     });
