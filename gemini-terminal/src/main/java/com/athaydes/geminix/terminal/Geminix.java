@@ -11,13 +11,13 @@ public final class Geminix {
 
         var uim = CommandLineUserInteractionManager.INSTANCE;
         var client = new Client(uim);
-        var commandHandler = new CommandHandler(uim.getPrinter());
+        var commandHandler = new CommandHandler(uim);
 
-        uim.promptUser("Enter a URL or command (enter ' help' for help, ' quit' to exit):", (userAnswer) -> {
+        uim.promptUser("Enter a URL or command (enter '.help' for help, '.quit' to exit):", (userAnswer) -> {
             var answer = userAnswer.trim();
             var done = false;
-            if (userAnswer.startsWith(" ")) {
-                done = commandHandler.handle(answer);
+            if (answer.startsWith(".")) {
+                done = commandHandler.handle(answer.substring(1));
             } else if (!answer.isEmpty()) {
                 client.sendRequest(answer);
             }

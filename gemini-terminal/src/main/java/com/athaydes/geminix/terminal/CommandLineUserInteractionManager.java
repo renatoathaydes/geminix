@@ -5,6 +5,7 @@ import com.athaydes.geminix.client.Response;
 import com.athaydes.geminix.client.UserInteractionManager;
 import com.athaydes.geminix.terminal.tls.CachedTlsCertificateStorage;
 import com.athaydes.geminix.tls.FileTlsCertificateStorage;
+import com.athaydes.geminix.tls.TlsCertificateStorage;
 import com.athaydes.geminix.tls.TlsManager;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
@@ -25,6 +26,7 @@ public final class CommandLineUserInteractionManager
 
     private final ErrorHandler errorHandler;
     private final TlsManager tlsManager;
+    private final CachedTlsCertificateStorage certificateStorage;
     private final Terminal terminal;
     private final LineReader lineReader;
     private final TerminalPrinter printer;
@@ -45,9 +47,13 @@ public final class CommandLineUserInteractionManager
                 .build();
 
         var fileStorage = new FileTlsCertificateStorage(Paths.get("certs"));
-        var tlsCertificateStorage = new CachedTlsCertificateStorage(fileStorage, errorHandler);
+        this.certificateStorage = new CachedTlsCertificateStorage(fileStorage, errorHandler);
 
-        this.tlsManager = new TerminalTlsManager(this, tlsCertificateStorage);
+        this.tlsManager = new TerminalTlsManager(this, certificateStorage);
+    }
+
+    public TlsCertificateStorage getCertificateStorage() {
+        return certificateStorage;
     }
 
     @Override
