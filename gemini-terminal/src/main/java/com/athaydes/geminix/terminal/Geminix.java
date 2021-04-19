@@ -11,7 +11,7 @@ public final class Geminix {
 
         var uim = CommandLineUserInteractionManager.INSTANCE;
         var client = new Client(uim);
-        var commandHandler = new CommandHandler(uim);
+        var commandHandler = uim.getCommandHandler();
 
         uim.promptUser("Enter a URL or command (enter '.help' for help, '.quit' to exit):", (userAnswer) -> {
             var answer = userAnswer.trim();

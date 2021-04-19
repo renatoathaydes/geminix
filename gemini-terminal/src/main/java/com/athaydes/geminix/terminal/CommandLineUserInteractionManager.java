@@ -25,6 +25,7 @@ public final class CommandLineUserInteractionManager
     static final CommandLineUserInteractionManager INSTANCE = new CommandLineUserInteractionManager();
 
     private final ErrorHandler errorHandler;
+    private final CommandHandler commandHandler;
     private final TlsManager tlsManager;
     private final CachedTlsCertificateStorage certificateStorage;
     private final Terminal terminal;
@@ -35,21 +36,32 @@ public final class CommandLineUserInteractionManager
         this.printer = new TerminalPrinter();
         this.errorHandler = new TerminalErrorHandler(printer);
 
+        var fileStorage = new FileTlsCertificateStorage(Paths.get("certs"));
+        this.certificateStorage = new CachedTlsCertificateStorage(fileStorage, errorHandler);
+
         try {
-            this.terminal = TerminalBuilder.terminal();
+            this.terminal = TerminalBuilder.builder()
+                    .jansi(true)
+                    .name("Geminix")
+                    .encoding(StandardCharsets.UTF_8)
+                    .build();
         } catch (IOException e) {
             throw new RuntimeException("Unable to initialize terminal", e);
         }
 
+        this.commandHandler = new CommandHandler(this);
+
         this.lineReader = LineReaderBuilder.builder()
                 .terminal(terminal)
+                .completer(commandHandler.getCompleter())
                 .appName("geminix")
                 .build();
 
-        var fileStorage = new FileTlsCertificateStorage(Paths.get("certs"));
-        this.certificateStorage = new CachedTlsCertificateStorage(fileStorage, errorHandler);
-
         this.tlsManager = new TerminalTlsManager(this, certificateStorage);
+    }
+
+    public CommandHandler getCommandHandler() {
+        return commandHandler;
     }
 
     public TlsCertificateStorage getCertificateStorage() {

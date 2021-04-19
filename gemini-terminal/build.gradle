@@ -13,6 +13,7 @@ dependencies {
     implementation project(':gemini-client')
     implementation libs.jlinereader
     implementation libs.jlineterminal
+    implementation libs.jlinebuiltins
     implementation libs.jlinejansi
     testImplementation libs.junit5.api
     testImplementation libs.junit5.params

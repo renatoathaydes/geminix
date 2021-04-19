@@ -4,12 +4,18 @@ import com.athaydes.geminix.client.ErrorHandler;
 import com.athaydes.geminix.client.UserInteractionManager;
 import com.athaydes.geminix.tls.TlsCertificateStorage;
 import org.fusesource.jansi.Ansi;
+import org.jline.builtins.Completers;
+import org.jline.reader.Completer;
+import org.jline.reader.impl.completer.StringsCompleter;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
+
+import static org.jline.builtins.Completers.TreeCompleter.node;
 
 final class CommandHandler {
     private static final String HELP = """
@@ -299,5 +305,30 @@ final class CommandHandler {
             }
             return null;
         });
+    }
+
+    public Completer getCompleter() {
+        var hostsCompleter = node(new StringsCompleter(() -> {
+            try {
+                return certificateStorage.loadAll().keySet().stream().toList();
+            } catch (TlsCertificateStorage.StorageException e) {
+                return Collections.emptyList();
+            }
+        }));
+        return new Completers.TreeCompleter(
+                node(".help",
+                        node("help", "quit", "colors", "prompt", "certs")),
+                node(".quit"),
+                node(".colors",
+                        node("on", "off"),
+                        node("info", "warn", "error", "prompt",
+                                node("black", "red", "green", "yellow", "blue", "magenta", "cyan", "white", "default"))),
+                node(".prompt"),
+                node(".certs",
+                        node("server",
+                                node("show", hostsCompleter),
+                                node("rm", hostsCompleter),
+                                "clear"))
+        );
     }
 }
