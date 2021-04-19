@@ -16,7 +16,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.function.Predicate;
 
 public final class CommandLineUserInteractionManager
@@ -36,7 +35,7 @@ public final class CommandLineUserInteractionManager
         this.printer = new TerminalPrinter();
         this.errorHandler = new TerminalErrorHandler(printer);
 
-        var fileStorage = new FileTlsCertificateStorage(Paths.get("certs"));
+        var fileStorage = new FileTlsCertificateStorage(Files.INSTANCE.getCertificates());
         this.certificateStorage = new CachedTlsCertificateStorage(fileStorage, errorHandler);
 
         try {
@@ -53,6 +52,7 @@ public final class CommandLineUserInteractionManager
 
         this.lineReader = LineReaderBuilder.builder()
                 .terminal(terminal)
+                .variable(LineReader.HISTORY_FILE, Files.INSTANCE.getHistory())
                 .completer(commandHandler.getCompleter())
                 .appName("geminix")
                 .build();
