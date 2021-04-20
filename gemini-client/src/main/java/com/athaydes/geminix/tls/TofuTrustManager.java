@@ -1,7 +1,11 @@
 package com.athaydes.geminix.tls;
 
 import javax.net.ssl.X509TrustManager;
-import java.security.cert.*;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateExpiredException;
+import java.security.cert.CertificateNotYetValidException;
+import java.security.cert.CertificateParsingException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -68,7 +72,7 @@ final class TofuTrustManager implements X509TrustManager {
         var certificateCN = parseCertificateName(certificateName).get("CN");
         var alternativeNames = getAlternativeNames(certificate);
         return Stream.concat(
-                Stream.of(certificateCN),
+                certificateCN == null ? Stream.empty() : Stream.of(certificateCN),
                 alternativeNames.stream()
         ).collect(toSet());
     }
