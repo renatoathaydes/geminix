@@ -30,6 +30,7 @@ public final class CommandLineUserInteractionManager
     private final Terminal terminal;
     private final LineReader lineReader;
     private final TerminalPrinter printer;
+    private final BookmarksManager bookmarksManager;
 
     private CommandLineUserInteractionManager() {
         this.printer = new TerminalPrinter();
@@ -37,6 +38,14 @@ public final class CommandLineUserInteractionManager
 
         var fileStorage = new FileTlsCertificateStorage(Files.INSTANCE.getCertificates());
         this.certificateStorage = new CachedTlsCertificateStorage(fileStorage, errorHandler);
+
+        this.bookmarksManager = new BookmarksManager(Files.INSTANCE.getBookmarks(), printer);
+
+        try {
+            bookmarksManager.load();
+        } catch (IOException e) {
+            printer.error("Could not load bookmarks from " + bookmarksManager.getFile() + " due to: " + e);
+        }
 
         try {
             this.terminal = TerminalBuilder.builder()
@@ -60,12 +69,20 @@ public final class CommandLineUserInteractionManager
         this.tlsManager = new TerminalTlsManager(this, certificateStorage);
     }
 
-    public CommandHandler getCommandHandler() {
+    BookmarksManager getBookmarksManager() {
+        return bookmarksManager;
+    }
+
+    CommandHandler getCommandHandler() {
         return commandHandler;
     }
 
-    public TlsCertificateStorage getCertificateStorage() {
+    TlsCertificateStorage getCertificateStorage() {
         return certificateStorage;
+    }
+
+    TerminalPrinter getPrinter() {
+        return printer;
     }
 
     @Override
@@ -76,10 +93,6 @@ public final class CommandLineUserInteractionManager
     @Override
     public ErrorHandler getErrorHandler() {
         return errorHandler;
-    }
-
-    public TerminalPrinter getPrinter() {
-        return printer;
     }
 
     @Override

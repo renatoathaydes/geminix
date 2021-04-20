@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.jline.builtins.Completers.TreeCompleter.node;
@@ -32,12 +33,14 @@ final class CommandHandler {
                         
             Geminix supports the following commands:
                         
-            * help          - shows this help message.
-            * help <cmd>    - show help for a given command.
-            * colors <args> - manages output colors.
-            * prompt <p>    - sets the prompt.
-            * certs <args>  - manages TLS certificates.
-            * quit          - quits Geminix.
+            * help            - shows this help message.
+            * help <cmd>      - show help for a given command.
+            * colors <args>   - manages output colors.
+            * prompt <p>      - sets the prompt.
+            * certs <args>    - manages TLS certificates.
+            * bookmark <args> - manages bookmarks.
+            * bm <args>       - alias to bookmark.
+            * quit            - quits Geminix.
                         
             To enter a command, prefix it with a '.'.
                         
@@ -98,6 +101,30 @@ final class CommandHandler {
             * server clear        - remove all cached certificates for all hosts.
             """;
 
+    private static final String BOOKMARK_HELP = """
+            The bookmark (bm) command is used to manage and use bookmarks.
+                        
+            It accepts the following arguments:
+                        
+            * add <name> <url> - create a bookmark.
+            * rm <name>        - remove a bookmark.
+            * show             - show all bookmarks.
+            * go <name>        - send a request to the URL associated with the given bookmark.
+            * <name>           - same as 'go <name>' as long as <name> is not a sub-command.
+                        
+            To open the URL associated with a bookmark, simply type '.bm <name>'.
+                        
+            For example:
+                        
+            ```
+            # Add bookmark
+            .bm add gmn gemini.circumlunar.space/
+                        
+            # Navigate to the bookmarked URL
+            .bm gmn
+            ```
+            """;
+
     private static final String QUIT_HELP = """
             The quit command exits Geminix.
             """;
@@ -106,11 +133,13 @@ final class CommandHandler {
     private final TlsCertificateStorage certificateStorage;
     private final ErrorHandler errorHandler;
     private final UserInteractionManager uim;
+    private final BookmarksManager bookmarks;
 
     public CommandHandler(CommandLineUserInteractionManager uim) {
         this.certificateStorage = uim.getCertificateStorage();
         this.printer = uim.getPrinter();
         this.errorHandler = uim.getErrorHandler();
+        this.bookmarks = uim.getBookmarksManager();
         this.uim = uim;
     }
 
@@ -124,22 +153,15 @@ final class CommandHandler {
         if (!answer.isEmpty()) {
             var cmd = answer.split("\\s+");
             switch (cmd[0]) {
-                case "help":
-                    handleHelp(cmd);
-                    break;
-                case "quit":
+                case "help" -> handleHelp(cmd);
+                case "colors" -> handleColors(cmd);
+                case "prompt" -> handlePrompt(answer.substring("prompt".length()));
+                case "bookmark", "bm" -> handleBookmark(cmd);
+                case "certs" -> handleCerts(cmd);
+                default -> printer.error("Invalid command: " + answer);
+                case "quit" -> {
                     return true;
-                case "colors":
-                    handleColors(cmd);
-                    break;
-                case "prompt":
-                    handlePrompt(answer.substring("prompt".length()));
-                    break;
-                case "certs":
-                    handleCerts(cmd);
-                    break;
-                default:
-                    printer.error("Invalid command: " + answer);
+                }
             }
         }
         return false;
@@ -189,6 +211,7 @@ final class CommandHandler {
             case "colors" -> printer.info(COLORS_HELP);
             case "help" -> printer.info(HELP_HELP);
             case "prompt" -> printer.info(PROMPT_HELP);
+            case "bookmark", "bm" -> printer.info(BOOKMARK_HELP);
             case "certs" -> printer.info(CERTS_HELP);
             case "quit" -> printer.info(QUIT_HELP);
             default -> printer.error("Unknown command: " + cmd);
@@ -199,9 +222,87 @@ final class CommandHandler {
         printer.setPrompt(text.trim() + " ");
     }
 
+    private void handleBookmark(String[] cmd) {
+        if (cmd.length < 2) {
+            printer.error("Missing arguments for bookmark command");
+        } else {
+            switch (cmd[1]) {
+                case "add" -> {
+                    if (cmd.length == 4) {
+                        handleAddBookmark(cmd[2], cmd[3]);
+                    } else {
+                        printer.error("'bookmark add' sub-command takes 2 arguments.");
+                    }
+                }
+                case "rm" -> {
+                    if (cmd.length == 3) {
+                        handleRemoveBookmark(cmd[2]);
+                    } else {
+                        printer.error("'bookmark rm' sub-command takes only one argument.");
+                    }
+                }
+                case "show" -> {
+                    if (cmd.length == 2) {
+                        handleShowBookmarks();
+                    } else {
+                        printer.error("'bookmark show' sub-command does not take any arguments.");
+                    }
+                }
+                case "go" -> {
+                    if (cmd.length == 3) {
+                        handleGoToBookmark(cmd[2]);
+                    } else {
+                        printer.error("'bookmark go' sub-command takes 1 argument.");
+                    }
+                }
+                default -> {
+                    if (cmd.length == 2) {
+                        handleGoToBookmark(cmd[1]);
+                    } else {
+                        printer.error("Invalid sub-command: " + cmd[1]);
+                    }
+                }
+            }
+        }
+    }
+
+    private void handleAddBookmark(String name, String url) {
+        errorHandler.run(() -> {
+            var done = bookmarks.add(name, url);
+            if (done) printer.info("Bookmark added.");
+            else printer.warn("Bookmark already exists. To change it, first remove it, then add it again.");
+            return null;
+        });
+    }
+
+    private void handleRemoveBookmark(String name) {
+        errorHandler.run(() -> {
+            var done = bookmarks.remove(name);
+            if (done) printer.info("Bookmark removed.");
+            else printer.info("Bookmark does not exist.");
+            return null;
+        });
+    }
+
+    private void handleShowBookmarks() {
+        var all = bookmarks.getAll();
+        printer.info("You have " + all.size() + " bookmark" +
+                (all.size() == 1 ? "" : "s") +
+                (all.size() == 0 ? ".\nTo add one, type '.bm add <name> <url>'." : ":\n"));
+        all.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> printer.info("* " + entry.getKey() + " - " + entry.getValue()));
+    }
+
+    private void handleGoToBookmark(String name) {
+        bookmarks.get(name).ifPresentOrElse(
+                url -> printer.error("GO TO BOOKMARK not implemented yet"),
+                () -> printer.error("bookmark does not exist: '" + name + "'."));
+    }
+
     private void handleCerts(String[] cmd) {
         if (cmd.length < 3) {
-            printer.error("certs command takes at least 2 arguments");
+            printer.error("certs command takes at least 2 arguments.");
             return;
         }
         switch (cmd[1]) {
@@ -315,15 +416,29 @@ final class CommandHandler {
                 return Collections.emptyList();
             }
         }));
+
+        var bookmarkCompleter = node(new StringsCompleter(() ->
+                bookmarks.getAll().keySet().stream().sorted().toList()));
+
         return new Completers.TreeCompleter(
                 node(".help",
-                        node("help", "quit", "colors", "prompt", "certs")),
+                        node("help", "quit", "colors", "prompt", "bookmark", "bm", "certs")),
                 node(".quit"),
                 node(".colors",
                         node("on", "off"),
                         node("info", "warn", "error", "prompt",
                                 node("black", "red", "green", "yellow", "blue", "magenta", "cyan", "white", "default"))),
                 node(".prompt"),
+                node(".bookmark",
+                        node("add", "show"),
+                        node("rm", bookmarkCompleter),
+                        node("go", bookmarkCompleter),
+                        bookmarkCompleter),
+                node(".bm",
+                        node("add", "show"),
+                        node("rm", bookmarkCompleter),
+                        node("go", bookmarkCompleter),
+                        bookmarkCompleter),
                 node(".certs",
                         node("server",
                                 node("show", hostsCompleter),
