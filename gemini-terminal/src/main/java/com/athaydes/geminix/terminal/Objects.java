@@ -21,7 +21,7 @@ public class Objects {
     static final Client client = new Client(uim);
 
     static final CommandHandler commandHandler = new CommandHandler(
-            certificateStorage, printer, errorHandler, bookmarks, uim);
+            certificateStorage, printer, errorHandler, bookmarks, uim, client);
 
     static {
         try {

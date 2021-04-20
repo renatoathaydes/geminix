@@ -1,5 +1,6 @@
 package com.athaydes.geminix.terminal;
 
+import com.athaydes.geminix.client.Client;
 import com.athaydes.geminix.client.ErrorHandler;
 import com.athaydes.geminix.client.UserInteractionManager;
 import com.athaydes.geminix.tls.TlsCertificateStorage;
@@ -128,17 +129,20 @@ final class CommandHandler {
     private final ErrorHandler errorHandler;
     private final UserInteractionManager uim;
     private final BookmarksManager bookmarks;
+    private final Client client;
 
     public CommandHandler(TlsCertificateStorage certificateStorage,
                           TerminalPrinter printer,
                           ErrorHandler errorHandler,
                           BookmarksManager bookmarks,
-                          UserInteractionManager uim) {
+                          UserInteractionManager uim,
+                          Client client) {
         this.certificateStorage = certificateStorage;
         this.printer = printer;
         this.errorHandler = errorHandler;
         this.bookmarks = bookmarks;
         this.uim = uim;
+        this.client = client;
     }
 
     /**
@@ -294,8 +298,7 @@ final class CommandHandler {
 
     private void handleGoToBookmark(String name) {
         bookmarks.get(name).ifPresentOrElse(
-                // FIXME use client to send request
-                url -> printer.error("GO TO BOOKMARK not implemented yet"),
+                client::sendRequest,
                 () -> printer.error("bookmark does not exist: '" + name + "'."));
     }
 
