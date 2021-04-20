@@ -4,4 +4,5 @@
 module geminix.client {
     exports com.athaydes.geminix.client;
     exports com.athaydes.geminix.tls;
+    exports com.athaydes.geminix.text;
 }
