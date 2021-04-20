@@ -4,8 +4,6 @@ import com.athaydes.geminix.client.ErrorHandler;
 import com.athaydes.geminix.client.Response;
 import com.athaydes.geminix.client.UserInteractionManager;
 import com.athaydes.geminix.terminal.tls.CachedTlsCertificateStorage;
-import com.athaydes.geminix.tls.FileTlsCertificateStorage;
-import com.athaydes.geminix.tls.TlsCertificateStorage;
 import com.athaydes.geminix.tls.TlsManager;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
@@ -18,34 +16,21 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Predicate;
 
-public final class CommandLineUserInteractionManager
+public final class TerminalUserInteractionManager
         implements UserInteractionManager, Closeable, AutoCloseable {
 
-    static final CommandLineUserInteractionManager INSTANCE = new CommandLineUserInteractionManager();
-
     private final ErrorHandler errorHandler;
-    private final CommandHandler commandHandler;
     private final TlsManager tlsManager;
-    private final CachedTlsCertificateStorage certificateStorage;
     private final Terminal terminal;
     private final LineReader lineReader;
     private final TerminalPrinter printer;
-    private final BookmarksManager bookmarksManager;
 
-    private CommandLineUserInteractionManager() {
-        this.printer = new TerminalPrinter();
-        this.errorHandler = new TerminalErrorHandler(printer);
-
-        var fileStorage = new FileTlsCertificateStorage(Files.INSTANCE.getCertificates());
-        this.certificateStorage = new CachedTlsCertificateStorage(fileStorage, errorHandler);
-
-        this.bookmarksManager = new BookmarksManager(Files.INSTANCE.getBookmarks(), printer);
-
-        try {
-            bookmarksManager.load();
-        } catch (IOException e) {
-            printer.error("Could not load bookmarks from " + bookmarksManager.getFile() + " due to: " + e);
-        }
+    TerminalUserInteractionManager(TerminalPrinter terminalPrinter,
+                                   TerminalErrorHandler terminalErrorHandler,
+                                   CachedTlsCertificateStorage certificateStorage,
+                                   CompleterFactory completerFactory) {
+        this.printer = terminalPrinter;
+        this.errorHandler = terminalErrorHandler;
 
         try {
             this.terminal = TerminalBuilder.builder()
@@ -57,32 +42,14 @@ public final class CommandLineUserInteractionManager
             throw new RuntimeException("Unable to initialize terminal", e);
         }
 
-        this.commandHandler = new CommandHandler(this);
-
         this.lineReader = LineReaderBuilder.builder()
                 .terminal(terminal)
                 .variable(LineReader.HISTORY_FILE, Files.INSTANCE.getHistory())
-                .completer(commandHandler.getCompleter())
+                .completer(completerFactory.create())
                 .appName("geminix")
                 .build();
 
-        this.tlsManager = new TerminalTlsManager(this, certificateStorage);
-    }
-
-    BookmarksManager getBookmarksManager() {
-        return bookmarksManager;
-    }
-
-    CommandHandler getCommandHandler() {
-        return commandHandler;
-    }
-
-    TlsCertificateStorage getCertificateStorage() {
-        return certificateStorage;
-    }
-
-    TerminalPrinter getPrinter() {
-        return printer;
+        this.tlsManager = new TerminalTlsManager(this, certificateStorage, printer);
     }
 
     @Override

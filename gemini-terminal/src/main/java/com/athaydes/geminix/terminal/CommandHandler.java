@@ -4,19 +4,13 @@ import com.athaydes.geminix.client.ErrorHandler;
 import com.athaydes.geminix.client.UserInteractionManager;
 import com.athaydes.geminix.tls.TlsCertificateStorage;
 import org.fusesource.jansi.Ansi;
-import org.jline.builtins.Completers;
-import org.jline.reader.Completer;
-import org.jline.reader.impl.completer.StringsCompleter;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
-
-import static org.jline.builtins.Completers.TreeCompleter.node;
 
 final class CommandHandler {
     private static final String HELP = """
@@ -135,11 +129,15 @@ final class CommandHandler {
     private final UserInteractionManager uim;
     private final BookmarksManager bookmarks;
 
-    public CommandHandler(CommandLineUserInteractionManager uim) {
-        this.certificateStorage = uim.getCertificateStorage();
-        this.printer = uim.getPrinter();
-        this.errorHandler = uim.getErrorHandler();
-        this.bookmarks = uim.getBookmarksManager();
+    public CommandHandler(TlsCertificateStorage certificateStorage,
+                          TerminalPrinter printer,
+                          ErrorHandler errorHandler,
+                          BookmarksManager bookmarks,
+                          UserInteractionManager uim) {
+        this.certificateStorage = certificateStorage;
+        this.printer = printer;
+        this.errorHandler = errorHandler;
+        this.bookmarks = bookmarks;
         this.uim = uim;
     }
 
@@ -296,6 +294,7 @@ final class CommandHandler {
 
     private void handleGoToBookmark(String name) {
         bookmarks.get(name).ifPresentOrElse(
+                // FIXME use client to send request
                 url -> printer.error("GO TO BOOKMARK not implemented yet"),
                 () -> printer.error("bookmark does not exist: '" + name + "'."));
     }
@@ -408,42 +407,4 @@ final class CommandHandler {
         });
     }
 
-    public Completer getCompleter() {
-        var hostsCompleter = node(new StringsCompleter(() -> {
-            try {
-                return certificateStorage.loadAll().keySet().stream().toList();
-            } catch (TlsCertificateStorage.StorageException e) {
-                return Collections.emptyList();
-            }
-        }));
-
-        var bookmarkCompleter = node(new StringsCompleter(() ->
-                bookmarks.getAll().keySet().stream().sorted().toList()));
-
-        return new Completers.TreeCompleter(
-                node(".help",
-                        node("help", "quit", "colors", "prompt", "bookmark", "bm", "certs")),
-                node(".quit"),
-                node(".colors",
-                        node("on", "off"),
-                        node("info", "warn", "error", "prompt",
-                                node("black", "red", "green", "yellow", "blue", "magenta", "cyan", "white", "default"))),
-                node(".prompt"),
-                node(".bookmark",
-                        node("add", "show"),
-                        node("rm", bookmarkCompleter),
-                        node("go", bookmarkCompleter),
-                        bookmarkCompleter),
-                node(".bm",
-                        node("add", "show"),
-                        node("rm", bookmarkCompleter),
-                        node("go", bookmarkCompleter),
-                        bookmarkCompleter),
-                node(".certs",
-                        node("server",
-                                node("show", hostsCompleter),
-                                node("rm", hostsCompleter),
-                                "clear"))
-        );
-    }
 }

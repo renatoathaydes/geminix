@@ -1,5 +1,6 @@
 package com.athaydes.geminix.terminal;
 
+import com.athaydes.geminix.client.UserInteractionManager;
 import com.athaydes.geminix.terminal.tls.CachedTlsCertificateStorage;
 import com.athaydes.geminix.tls.TlsManager;
 
@@ -9,15 +10,16 @@ import java.util.Locale;
 
 final class TerminalTlsManager extends TlsManager {
 
-    private final CommandLineUserInteractionManager userInteractionManager;
+    private final UserInteractionManager userInteractionManager;
     private final CachedTlsCertificateStorage tlsCertificateStorage;
     private final TerminalPrinter printer;
 
-    public TerminalTlsManager(CommandLineUserInteractionManager userInteractionManager,
-                              CachedTlsCertificateStorage tlsCertificateStorage) {
+    public TerminalTlsManager(TerminalUserInteractionManager userInteractionManager,
+                              CachedTlsCertificateStorage tlsCertificateStorage,
+                              TerminalPrinter printer) {
         this.userInteractionManager = userInteractionManager;
         this.tlsCertificateStorage = tlsCertificateStorage;
-        this.printer = userInteractionManager.getPrinter();
+        this.printer = printer;
     }
 
     @Override
