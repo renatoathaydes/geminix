@@ -3,27 +3,31 @@ package com.athaydes.geminix.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Scanner;
 
-import static com.athaydes.geminix.util.SpecialCharacters.*;
 import static com.athaydes.geminix.client.StatusCode.*;
+import static com.athaydes.geminix.util.SpecialCharacters.*;
 
 public class ResponseParser {
 
+    private static final int MAX_BYTES_IN_META = 1024;
+
+    private final byte[] metaBuffer = new byte[MAX_BYTES_IN_META];
+
     public Response parse(InputStream is) throws IOException, ResponseParseError {
         var status = parseStatus(is);
-        if (is.read() != ' ') {
-            throw new ResponseParseError("Expected whitespace after status");
+        int b = is.read();
+        if (b != ' ') {
+            throw new ResponseParseError("Invalid response: expected whitespace after status, but got '" +
+                    Integer.toUnsignedString(b, 16) + "'.");
         }
-        var scanner = new Scanner(is, StandardCharsets.UTF_8);
-        var meta = scanner.nextLine();
+
+        var meta = parseMeta(is);
 
         if (status.isInput()) {
             return new Response.Input(status, meta);
         }
         if (status.isSuccess()) {
-            var body = is.readAllBytes();
-            return new Response.Success(status, meta, body);
+            return new Response.Success(status, meta, is);
         }
         if (status.isRedirect()) {
             return new Response.Redirect(status, meta);
@@ -94,6 +98,27 @@ public class ResponseParser {
             default:
                 throw new ResponseParseError("first status code digit: not a digit");
         }
+    }
+
+    private String parseMeta(InputStream is) throws IOException, ResponseParseError {
+        int i = 0;
+
+        while (true) {
+            var b = (byte) is.read();
+            if (b < 0) break;
+            if (b == '\r') {
+                var c = (byte) is.read();
+                if (c < 0 || c == '\n') break;
+                metaBuffer[i++] = b;
+                b = c;
+            }
+            if (i == MAX_BYTES_IN_META) {
+                throw new ResponseParseError("Meta line is too long");
+            }
+            metaBuffer[i++] = b;
+        }
+
+        return new String(metaBuffer, 0, i, StandardCharsets.UTF_8);
     }
 
 }
