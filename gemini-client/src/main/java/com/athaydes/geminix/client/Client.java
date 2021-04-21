@@ -78,7 +78,9 @@ public class Client {
         try {
             newTarget = UriHelper.geminify(redirect.uri());
         } catch (URISyntaxException e) {
-            throw new RuntimeException("Redirect URI is not valid: " + redirect.uri());
+            throw new RuntimeException("Redirect URI '" + redirect.uri() + "' is not valid. " + e);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Redirect URI '" +redirect.uri() + "' cannot be followed: " + e.getMessage());
         }
         var isNew = visitedURIs.add(newTarget);
         if (!isNew) {
