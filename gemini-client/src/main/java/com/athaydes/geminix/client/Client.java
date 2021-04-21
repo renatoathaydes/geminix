@@ -8,11 +8,15 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.athaydes.geminix.util.SpecialCharacters.CRLF;
 import static com.athaydes.geminix.util.UriHelper.appendQuery;
 
 public class Client {
+
+    private static final int MAX_REDIRECTS_ALLOWED = 5;
 
     private final UserInteractionManager userInteractionManager;
     private final TlsSocketFactory socketFactory;
@@ -43,23 +47,48 @@ public class Client {
     }
 
     private void sendRequest(URI target) {
-        userInteractionManager.getErrorHandler().run(() -> send(target)).ifPresent(response -> {
-            if (response instanceof Response.Input input) {
-                userInteractionManager.promptUser(input.prompt(), (userAnswer) -> {
-                    var newTarget = appendQuery(target, userAnswer);
-                    sendRequest(newTarget);
-                    return true;
-                });
-            } else if (response instanceof Response.Redirect redirect) {
-                try {
-                    sendRequest(UriHelper.geminify(redirect.uri()));
-                } catch (URISyntaxException e) {
-                    throw new RuntimeException("Redirect URI is not valid: " + redirect.uri());
+        var currentUri = new AtomicReference<>(target);
+        userInteractionManager.getErrorHandler().run(() -> {
+            var visitedURIs = new HashSet<URI>(2);
+            while (true) {
+                var response = send(currentUri.get());
+                if (response instanceof Response.Input input) {
+                    userInteractionManager.promptUser(input.prompt(), (userAnswer) -> {
+                        currentUri.set(appendQuery(currentUri.get(), userAnswer));
+                        return true;
+                    });
+                } else if (response instanceof Response.Redirect redirect) {
+                    currentUri.set(handleRedirect(visitedURIs, redirect));
+                } else {
+                    userInteractionManager.showResponse(response);
+
+                    // success responses keep a reference to the socket's stream and must be explicitly closed
+                    if (response instanceof Response.Success success) {
+                        success.body().close();
+                    }
+                    break;
                 }
-            } else {
-                userInteractionManager.showResponse(response);
             }
+            return null;
         });
+    }
+
+    protected URI handleRedirect(HashSet<URI> visitedURIs, Response.Redirect redirect) {
+        URI newTarget;
+        try {
+            newTarget = UriHelper.geminify(redirect.uri());
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Redirect URI is not valid: " + redirect.uri());
+        }
+        var isNew = visitedURIs.add(newTarget);
+        if (!isNew) {
+            throw new RuntimeException("Redirect cycle detected for URI '" + newTarget +
+                    "'. Already visited: " + visitedURIs);
+        }
+        if (visitedURIs.size() > MAX_REDIRECTS_ALLOWED) {
+            throw new RuntimeException("Too many redirects. Visited URIs: " + visitedURIs);
+        }
+        return newTarget;
     }
 
     private Response send(URI target) throws IOException, ResponseParseError {
@@ -68,15 +97,22 @@ public class Client {
         }
 
         userInteractionManager.beforeRequest(target);
-
-        try (var socket = socketFactory.create(
-                target.getHost(), target.getPort(), userInteractionManager.getTlsManager())) {
+        var socket = socketFactory.create(
+                target.getHost(), target.getPort(), userInteractionManager.getTlsManager());
+        Response response = null;
+        try {
             var in = socket.getInputStream();
             var out = socket.getOutputStream();
 
             sendLine(target, out);
-            return responseParser.parse(in);
+            response = responseParser.parse(in);
+        } finally {
+            // never close success responses here as they will contain the InputStream for reading the body
+            if (!(response instanceof Response.Success)) {
+                socket.close();
+            }
         }
+        return response;
     }
 
     private static void sendLine(Object object, OutputStream out) throws IOException {

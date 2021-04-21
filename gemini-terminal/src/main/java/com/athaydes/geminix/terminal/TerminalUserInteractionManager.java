@@ -78,14 +78,16 @@ public final class TerminalUserInteractionManager
     }
 
     @Override
-    public void showResponse(Response response) {
+    public void showResponse(Response response) throws IOException {
         printer.info("Response status: " + response.statusCode().name());
 
         if (response instanceof Response.Success success) {
             printer.info("Media Type: " + success.mediaType());
             if (success.mediaType().startsWith("text/")) {
                 System.out.println();
-                System.out.println(new String(success.body(), StandardCharsets.UTF_8));
+                // TODO use charset specified in media-type
+                // TODO print line by line
+                System.out.println(new String(success.body().readAllBytes(), StandardCharsets.UTF_8));
             } else {
                 printer.error("TODO : cannot yet handle non-textual media-type");
             }

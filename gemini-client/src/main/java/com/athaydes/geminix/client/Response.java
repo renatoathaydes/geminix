@@ -1,5 +1,7 @@
 package com.athaydes.geminix.client;
 
+import java.io.InputStream;
+
 public sealed interface Response
         permits Response.Input, Response.Success, Response.Redirect,
         Response.TemporaryFailure, Response.PermanentFailure, Response.ClientCertRequired {
@@ -14,7 +16,7 @@ public sealed interface Response
         }
     }
 
-    final record Success(StatusCode statusCode, String mediaType, byte[] body) implements Response {
+    final record Success(StatusCode statusCode, String mediaType, InputStream body) implements Response {
         public Success {
             if (!statusCode.isSuccess()) {
                 throw new IllegalArgumentException("statusCode must be SUCCESS");
