@@ -57,6 +57,12 @@ public class GemTextParserTest {
     }
 
     @Test
+    void canParseQuote() {
+        assertEquals(new GemTextLine.Quote("Something something"), parser.parseLine(">Something something"));
+        assertEquals(new GemTextLine.Quote("  Something other"), parser.parseLine(">  Something other"));
+    }
+
+    @Test
     void canParseLink() {
         assertEquals(new GemTextLine.Link("me", "Me at Gemini"),
                 parser.parseLine("=> me Me at Gemini"));
@@ -84,5 +90,41 @@ public class GemTextParserTest {
                 GemTextLine.PreformattedEnd.INSTANCE,
                 new GemTextLine.Text("last line")
         ), parser.apply(Stream.of("```", "hello", "foo", "``", "  bar```", "``` ignore", "last line")).toList());
+    }
+
+    @Test
+    void canParseSimpleExampleGemTextDocument() {
+        assertEquals(List.of(
+                new GemTextLine.Heading1("Main header"),
+                new GemTextLine.Text(""),
+                new GemTextLine.Text("This is a document."),
+                new GemTextLine.Quote(" A quote..."),
+                new GemTextLine.Text(""),
+                new GemTextLine.Heading2("A list:"),
+                new GemTextLine.ListItem("foo"),
+                new GemTextLine.ListItem("bar"),
+                new GemTextLine.Link("link", ""),
+                new GemTextLine.Link("gemini://link/path/", "Path to Gemini"),
+                new GemTextLine.PreformattedStart("java"),
+                new GemTextLine.Preformatted("    static void main() {}"),
+                GemTextLine.PreformattedEnd.INSTANCE,
+                new GemTextLine.Heading3("END")
+                ),
+                parser.apply(Stream.of(
+                        "# Main header",
+                        "",
+                        "This is a document.",
+                        "> A quote...",
+                        "",
+                        "## A list:",
+                        "* foo",
+                        "* bar",
+                        "=> link",
+                        "=>gemini://link/path/ Path to Gemini",
+                        "```java",
+                        "    static void main() {}",
+                        "```",
+                        "### END"
+                )).toList());
     }
 }

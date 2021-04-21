@@ -12,6 +12,10 @@ public class GemTextParser implements Function<Stream<String>, Stream<GemTextLin
         return lines.map(this::parseLine);
     }
 
+    public void reset() {
+        isPreformatted = false;
+    }
+
     public GemTextLine parseLine(String line) {
         if (isPreformatted) {
             if (line.startsWith("```")) {
@@ -36,6 +40,9 @@ public class GemTextParser implements Function<Stream<String>, Stream<GemTextLin
         }
         if (line.startsWith("* ")) {
             return new GemTextLine.ListItem(line.substring(2));
+        }
+        if (line.startsWith(">")) {
+            return new GemTextLine.Quote(line.substring(1));
         }
         if (line.startsWith("=>")) {
             var parts = line.substring(2).trim().split("\\s", 2);
