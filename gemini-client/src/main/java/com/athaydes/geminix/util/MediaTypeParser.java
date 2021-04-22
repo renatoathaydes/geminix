@@ -8,28 +8,6 @@ import java.util.Optional;
 
 public class MediaTypeParser {
 
-    public record MediaType(String type, String subType, Map<String, String> parameters) {
-        public boolean isText() {
-            return "text".equals(type);
-        }
-
-        public boolean isGeminiText() {
-            return isText() && "gemini".equals(subType);
-        }
-
-        public boolean isImage() {
-            return "image".equals(type);
-        }
-
-        public boolean isAudio() {
-            return "audio".equals(type);
-        }
-
-        public boolean isApplication() {
-            return "application".equals(type);
-        }
-    }
-
     public Optional<MediaType> parse(String mediaType) {
         if (mediaType.isEmpty()) return Optional.empty();
         var parts = mediaType.split(";");

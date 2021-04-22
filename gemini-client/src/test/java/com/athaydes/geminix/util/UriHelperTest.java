@@ -1,5 +1,6 @@
 package com.athaydes.geminix.util;
 
+import com.athaydes.geminix.util.internal.UriHelper;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
