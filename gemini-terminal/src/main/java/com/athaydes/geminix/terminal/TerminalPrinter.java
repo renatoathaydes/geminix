@@ -1,9 +1,9 @@
 package com.athaydes.geminix.terminal;
 
+import com.athaydes.geminix.text.GemTextLine;
+
 import static org.fusesource.jansi.Ansi.Color;
-import static org.fusesource.jansi.Ansi.Color.MAGENTA;
-import static org.fusesource.jansi.Ansi.Color.RED;
-import static org.fusesource.jansi.Ansi.Color.YELLOW;
+import static org.fusesource.jansi.Ansi.Color.*;
 import static org.fusesource.jansi.Ansi.ansi;
 
 final class TerminalPrinter {
@@ -12,6 +12,12 @@ final class TerminalPrinter {
     private Color infoColor = MAGENTA;
     private Color warnColor = YELLOW;
     private Color errorColor = RED;
+    private Color linkColor = BLUE;
+    private Color h1Color = GREEN;
+    private Color h2Color = GREEN;
+    private Color h3Color = GREEN;
+    private Color quoteColor = DEFAULT;
+    private Color listColor = DEFAULT;
     private String prompt = "> ";
 
     public void colors(boolean enable) {
@@ -32,6 +38,30 @@ final class TerminalPrinter {
 
     public void setErrorColor(Color errorColor) {
         this.errorColor = errorColor;
+    }
+
+    public void setLinkColor(Color linkColor) {
+        this.linkColor = linkColor;
+    }
+
+    public void setH1Color(Color h1Color) {
+        this.h1Color = h1Color;
+    }
+
+    public void setH2Color(Color h2Color) {
+        this.h2Color = h2Color;
+    }
+
+    public void setH3Color(Color h3Color) {
+        this.h3Color = h3Color;
+    }
+
+    public void setQuoteColor(Color quoteColor) {
+        this.quoteColor = quoteColor;
+    }
+
+    public void setListColor(Color listColor) {
+        this.listColor = listColor;
     }
 
     public void setPrompt(String prompt) {
@@ -58,6 +88,26 @@ final class TerminalPrinter {
 
     void error(String message) {
         print("ERROR: " + message, errorColor);
+    }
+
+    void print(GemTextLine line) {
+        if (line instanceof GemTextLine.Link link) {
+            print("→ " + link.url() + " " + link.description(), linkColor);
+        } else if (line instanceof GemTextLine.Quote quote) {
+            print("  " + ansi().bold().a(quote.value()).boldOff(), quoteColor);
+        } else if (line instanceof GemTextLine.Heading1 h1) {
+            print(ansi().bold().a("# " + h1.value()).boldOff().toString(), h1Color);
+        } else if (line instanceof GemTextLine.Heading2 h2) {
+            print(ansi().bold().a("## " + h2.value()).boldOff().toString(), h2Color);
+        } else if (line instanceof GemTextLine.Heading3 h3) {
+            print(ansi().bold().a("### " + h3.value()).boldOff().toString(), h3Color);
+        } else if (line instanceof GemTextLine.ListItem listItem) {
+            print("◘ " + listItem.value(), listColor);
+        } else if (line instanceof GemTextLine.Preformatted pre) {
+            System.out.println(pre.value());
+        } else if (line instanceof GemTextLine.Text text) {
+            System.out.println(text.value());
+        }
     }
 
     void print(String message, Color color) {

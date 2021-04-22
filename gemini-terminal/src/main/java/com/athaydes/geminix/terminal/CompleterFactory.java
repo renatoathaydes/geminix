@@ -29,7 +29,7 @@ public class CompleterFactory {
                 node(".quit"),
                 node(".colors",
                         node("on", "off"),
-                        node("info", "warn", "error", "prompt",
+                        node("info", "warn", "error", "prompt", "h1", "h2", "h3", "link", "list", "quote",
                                 node("black", "red", "green", "yellow", "blue", "magenta", "cyan", "white", "default"))),
                 node(".prompt"),
                 node(".bookmark",

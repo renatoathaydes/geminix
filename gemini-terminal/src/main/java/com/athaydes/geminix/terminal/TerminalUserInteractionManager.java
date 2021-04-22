@@ -4,16 +4,23 @@ import com.athaydes.geminix.client.ErrorHandler;
 import com.athaydes.geminix.client.Response;
 import com.athaydes.geminix.client.UserInteractionManager;
 import com.athaydes.geminix.terminal.tls.CachedTlsCertificateStorage;
+import com.athaydes.geminix.text.GemTextParser;
 import com.athaydes.geminix.tls.TlsManager;
+import com.athaydes.geminix.util.MediaType;
+import com.athaydes.geminix.util.MediaTypeParser;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.function.Predicate;
 
 public final class TerminalUserInteractionManager
@@ -24,6 +31,8 @@ public final class TerminalUserInteractionManager
     private final Terminal terminal;
     private final LineReader lineReader;
     private final TerminalPrinter printer;
+    private final MediaTypeParser mediaTypeParser;
+    private final GemTextParser gemTextParser;
 
     TerminalUserInteractionManager(TerminalPrinter terminalPrinter,
                                    TerminalErrorHandler terminalErrorHandler,
@@ -31,6 +40,8 @@ public final class TerminalUserInteractionManager
                                    CompleterFactory completerFactory) {
         this.printer = terminalPrinter;
         this.errorHandler = terminalErrorHandler;
+        this.mediaTypeParser = new MediaTypeParser();
+        this.gemTextParser = new GemTextParser();
 
         try {
             this.terminal = TerminalBuilder.builder()
@@ -78,16 +89,16 @@ public final class TerminalUserInteractionManager
     }
 
     @Override
-    public void showResponse(Response response) throws IOException {
+    public void showResponse(Response response) {
         printer.info("Response status: " + response.statusCode().name());
 
         if (response instanceof Response.Success success) {
             printer.info("Media Type: " + success.mediaType());
-            if (success.mediaType().startsWith("text/")) {
-                System.out.println();
-                // TODO use charset specified in media-type
-                // TODO print line by line
-                System.out.println(new String(success.body().readAllBytes(), StandardCharsets.UTF_8));
+            var mediaType = mediaTypeParser
+                    .parse(success.mediaType())
+                    .orElse(MediaType.GEMINI_TEXT);
+            if (mediaType.isText()) {
+                showSuccessText(mediaType, success);
             } else {
                 printer.error("TODO : cannot yet handle non-textual media-type");
             }
@@ -97,6 +108,37 @@ public final class TerminalUserInteractionManager
             printer.error(failure.errorMessage());
         } else if (response instanceof Response.TemporaryFailure failure) {
             printer.error(failure.errorMessage());
+        }
+    }
+
+    private void showSuccessText(MediaType mediaType,
+                                 Response.Success success) {
+        mediaType.getParameter(MediaType.Params.LANGUAGE).ifPresent(lang -> {
+            var language = Locale.forLanguageTag(lang).getDisplayName();
+            if (!language.isEmpty() && !language.equals(lang)) {
+                printer.info("Document language: " + language);
+            }
+        });
+
+        var charsetText = mediaType.getParameter(MediaType.Params.CHARSET)
+                .orElse(StandardCharsets.UTF_8.name());
+
+        Charset charset;
+        if (Charset.isSupported(charsetText)) {
+            charset = Charset.forName(charsetText);
+        } else {
+            printer.warn("Unsupported charset: '" + charsetText + "', will fallback to UTF-8.");
+            charset = StandardCharsets.UTF_8;
+        }
+
+        var reader = new BufferedReader(new InputStreamReader(success.body(), charset), 1024);
+
+        System.out.println();
+
+        if (mediaType.isGeminiText()) {
+            gemTextParser.apply(reader.lines()).forEach(printer::print);
+        } else {
+            reader.lines().forEach(System.out::println);
         }
     }
 

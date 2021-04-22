@@ -48,16 +48,15 @@ final class CommandHandler {
     private static final String COLORS_HELP = """
             The 'colors' command accepts the following arguments:
                         
-            * <level> <color>   - set the color to use for a log level.
-            * off               - turn off terminal colors.
-            * on                - turn on terminal colors.
+            * <item> <color>   - set the color to use for an item.
+            * off              - turn off terminal colors.
+            * on               - turn on terminal colors.
                         
-            Log levels are:
+            Available items are:
                         
-            * info
-            * warn
-            * error
-            * prompt
+            * info, warn, error (Log Levels).
+            * h1, h2, h3, quote, list, link (GemText lines).
+            * prompt (User Prompt).
                         
             Valid colors are:
                         
@@ -203,6 +202,12 @@ final class CommandHandler {
             case "info" -> printer.setInfoColor(ansiColor);
             case "warn" -> printer.setWarnColor(ansiColor);
             case "error" -> printer.setErrorColor(ansiColor);
+            case "h1" -> printer.setH1Color(ansiColor);
+            case "h2" -> printer.setH2Color(ansiColor);
+            case "h3" -> printer.setH3Color(ansiColor);
+            case "link" -> printer.setLinkColor(ansiColor);
+            case "list" -> printer.setListColor(ansiColor);
+            case "quote" -> printer.setQuoteColor(ansiColor);
             case "prompt" -> printer.setPromptColor(ansiColor);
             default -> printer.error("Invalid log level: " + level);
         }
