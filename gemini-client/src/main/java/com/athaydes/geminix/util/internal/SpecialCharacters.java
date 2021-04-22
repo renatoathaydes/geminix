@@ -1,4 +1,4 @@
-package com.athaydes.geminix.util;
+package com.athaydes.geminix.util.internal;
 
 public sealed interface SpecialCharacters permits SpecialCharacters.Nothing {
     final class Nothing implements SpecialCharacters {}

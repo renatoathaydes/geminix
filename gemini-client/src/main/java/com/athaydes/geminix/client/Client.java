@@ -1,18 +1,19 @@
 package com.athaydes.geminix.client;
 
 import com.athaydes.geminix.tls.TlsSocketFactory;
-import com.athaydes.geminix.util.UriHelper;
+import com.athaydes.geminix.util.internal.UriHelper;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.athaydes.geminix.util.SpecialCharacters.CRLF;
-import static com.athaydes.geminix.util.UriHelper.appendQuery;
+import static com.athaydes.geminix.util.internal.SpecialCharacters.CRLF;
+import static com.athaydes.geminix.util.internal.UriHelper.appendQuery;
 
 public class Client {
 
@@ -62,6 +63,8 @@ public class Client {
                 } else {
                     try {
                         userInteractionManager.showResponse(response);
+                    } catch (UncheckedIOException e) {
+                        throw e.getCause();
                     } finally {
                         // success responses keep a reference to the socket's stream and must be explicitly closed
                         if (response instanceof Response.Success success) {

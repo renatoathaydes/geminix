@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 import static com.athaydes.geminix.client.StatusCode.*;
-import static com.athaydes.geminix.util.SpecialCharacters.*;
+import static com.athaydes.geminix.util.internal.SpecialCharacters.*;
 
 public class ResponseParser {
 

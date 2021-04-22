@@ -1,15 +1,15 @@
-package com.athaydes.geminix.util;
+package com.athaydes.geminix.util.internal;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.regex.Pattern;
 
-import static com.athaydes.geminix.util.SpecialCharacters.URL_ENCODED_AMPERSAND;
-import static com.athaydes.geminix.util.SpecialCharacters.URL_ENCODED_EQUALS;
+import static com.athaydes.geminix.util.internal.SpecialCharacters.URL_ENCODED_AMPERSAND;
+import static com.athaydes.geminix.util.internal.SpecialCharacters.URL_ENCODED_EQUALS;
 
 public final class UriHelper {
 
-    private static final Pattern URI_PATTERN = Pattern.compile("([a-z]+)\\:\\/\\/.*");
+    private static final Pattern URI_PATTERN = Pattern.compile("([a-z]+)://.*");
 
     public static URI appendQuery(URI target, String userAnswer) {
         String query = target.getQuery();
