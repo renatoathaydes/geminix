@@ -12,10 +12,10 @@ final class TerminalPrinter {
     private Color infoColor = MAGENTA;
     private Color warnColor = YELLOW;
     private Color errorColor = RED;
-    private Color linkColor = BLUE;
-    private Color h1Color = GREEN;
-    private Color h2Color = GREEN;
-    private Color h3Color = GREEN;
+    private Color linkColor = CYAN;
+    private Color h1Color = BLUE;
+    private Color h2Color = BLUE;
+    private Color h3Color = BLUE;
     private Color quoteColor = DEFAULT;
     private Color listColor = DEFAULT;
     private String prompt = "> ";
@@ -103,6 +103,10 @@ final class TerminalPrinter {
             print(ansi().bold().a("### " + h3.value()).boldOff().toString(), h3Color);
         } else if (line instanceof GemTextLine.ListItem listItem) {
             print("◘ " + listItem.value(), listColor);
+        } else if (line instanceof  GemTextLine.PreformattedStart preStart) {
+            System.out.println("``` " + preStart.altText());
+        } else if (line instanceof GemTextLine.PreformattedEnd) {
+            System.out.println("```");
         } else if (line instanceof GemTextLine.Preformatted pre) {
             System.out.println(pre.value());
         } else if (line instanceof GemTextLine.Text text) {
