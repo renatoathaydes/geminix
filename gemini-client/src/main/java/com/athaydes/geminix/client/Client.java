@@ -60,12 +60,15 @@ public class Client {
                 } else if (response instanceof Response.Redirect redirect) {
                     currentUri.set(handleRedirect(visitedURIs, redirect));
                 } else {
-                    userInteractionManager.showResponse(response);
-
-                    // success responses keep a reference to the socket's stream and must be explicitly closed
-                    if (response instanceof Response.Success success) {
-                        success.body().close();
+                    try {
+                        userInteractionManager.showResponse(response);
+                    } finally {
+                        // success responses keep a reference to the socket's stream and must be explicitly closed
+                        if (response instanceof Response.Success success) {
+                            success.body().close();
+                        }
                     }
+
                     break;
                 }
             }
@@ -80,7 +83,7 @@ public class Client {
         } catch (URISyntaxException e) {
             throw new RuntimeException("Redirect URI '" + redirect.uri() + "' is not valid. " + e);
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Redirect URI '" +redirect.uri() + "' cannot be followed: " + e.getMessage());
+            throw new RuntimeException("Redirect URI '" + redirect.uri() + "' cannot be followed: " + e.getMessage());
         }
         var isNew = visitedURIs.add(newTarget);
         if (!isNew) {
