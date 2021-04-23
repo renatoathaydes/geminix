@@ -1,6 +1,7 @@
 package com.athaydes.geminix.terminal;
 
 import com.athaydes.geminix.text.GemTextLine;
+import org.fusesource.jansi.Ansi;
 
 import java.io.PrintStream;
 
@@ -103,35 +104,45 @@ final class TerminalPrinter {
 
     void print(GemTextLine line) {
         if (line instanceof GemTextLine.Link link) {
-            print("→ " + link.url() + " " + link.description(), linkColor);
+            print("→ " + link.url() + " " + link.description(), linkColor, Ansi.Attribute.UNDERLINE);
         } else if (line instanceof GemTextLine.Quote quote) {
-            print("  " + ansi().bold().a(quote.value()).boldOff(), quoteColor);
+            print("  " + quote.value(), quoteColor);
         } else if (line instanceof GemTextLine.Heading1 h1) {
-            print(ansi().bold().a("# " + h1.value()).boldOff().toString(), h1Color);
+            print("# " + h1.value(), h1Color, Ansi.Attribute.INTENSITY_BOLD);
         } else if (line instanceof GemTextLine.Heading2 h2) {
-            print(ansi().bold().a("## " + h2.value()).boldOff().toString(), h2Color);
+            print("## " + h2.value(), h2Color, Ansi.Attribute.INTENSITY_BOLD);
         } else if (line instanceof GemTextLine.Heading3 h3) {
-            print(ansi().bold().a("### " + h3.value()).boldOff().toString(), h3Color);
+            print("### " + h3.value(), h3Color, Ansi.Attribute.INTENSITY_BOLD);
         } else if (line instanceof GemTextLine.ListItem listItem) {
             print("◘ " + listItem.value(), listColor);
         } else if (line instanceof GemTextLine.PreformattedStart preStart) {
-            System.out.println("``` " + preStart.altText());
+            print("``` " + preStart.altText());
         } else if (line instanceof GemTextLine.PreformattedEnd) {
-            System.out.println("```");
+            print("```");
         } else if (line instanceof GemTextLine.Preformatted pre) {
-            System.out.println(pre.value());
+            print(pre.value());
         } else if (line instanceof GemTextLine.Text text) {
-            printWithLimitedWidth(System.out, text.value(), maxTextWidth);
+            print(text.value());
         }
     }
 
+    void print(String message) {
+        printWithLimitedWidth(System.out, message, maxTextWidth);
+    }
+
     void print(String message, Color color) {
-        System.out.println(enabled
-                ? ansi().fg(color).a(message).reset()
-                : message);
+        printWithLimitedWidth(System.out, message, maxTextWidth, color);
+    }
+
+    void print(String message, Color color, Ansi.Attribute... attributes) {
+        printWithLimitedWidth(System.out, message, maxTextWidth, color, attributes);
     }
 
     void printWithLimitedWidth(PrintStream out, String text, int width) {
+        printWithLimitedWidth(out, text, width, null);
+    }
+
+    void printWithLimitedWidth(PrintStream out, String text, int width, Color color, Ansi.Attribute... attributes) {
         if (text.isEmpty()) {
             out.println();
             return;
@@ -153,12 +164,22 @@ final class TerminalPrinter {
                     }
                 }
             }
-            out.println(text.substring(start, end).trim());
+
+            var message = text.substring(start, end).trim();
+            out.println(color != null && enabled ? format(message, color, attributes) : message);
 
             // ignore leading spaces in the next line
             start = indexOfNonSpace(text, end);
             end = start + width;
         }
+    }
+
+    private Ansi format(String message, Color color, Ansi.Attribute... attributes) {
+        var ansi = ansi().fg(color).a(message);
+        for (Ansi.Attribute attribute : attributes) {
+            ansi.a(attribute);
+        }
+        return ansi.reset();
     }
 
     private static int indexOfNonSpace(String text, int from) {

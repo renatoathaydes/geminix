@@ -138,7 +138,7 @@ public final class TerminalUserInteractionManager
         if (mediaType.isGeminiText()) {
             gemTextParser.apply(reader.lines()).forEach(printer::print);
         } else {
-            reader.lines().forEach(System.out::println);
+            reader.lines().forEach(printer::print);
         }
     }
 
