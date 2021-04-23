@@ -2,12 +2,15 @@ package com.athaydes.geminix.terminal;
 
 import com.athaydes.geminix.text.GemTextLine;
 
+import java.io.PrintStream;
+
 import static org.fusesource.jansi.Ansi.Color;
 import static org.fusesource.jansi.Ansi.Color.*;
 import static org.fusesource.jansi.Ansi.ansi;
 
 final class TerminalPrinter {
     private boolean enabled = true;
+    private int maxTextWidth = 120;
     private Color promptColor = MAGENTA;
     private Color infoColor = MAGENTA;
     private Color warnColor = YELLOW;
@@ -19,6 +22,14 @@ final class TerminalPrinter {
     private Color quoteColor = DEFAULT;
     private Color listColor = DEFAULT;
     private String prompt = "> ";
+
+    public int getMaxTextWidth() {
+        return maxTextWidth;
+    }
+
+    public void setMaxTextWidth(int maxTextWidth) {
+        this.maxTextWidth = maxTextWidth;
+    }
 
     public void colors(boolean enable) {
         this.enabled = enable;
@@ -103,14 +114,14 @@ final class TerminalPrinter {
             print(ansi().bold().a("### " + h3.value()).boldOff().toString(), h3Color);
         } else if (line instanceof GemTextLine.ListItem listItem) {
             print("◘ " + listItem.value(), listColor);
-        } else if (line instanceof  GemTextLine.PreformattedStart preStart) {
+        } else if (line instanceof GemTextLine.PreformattedStart preStart) {
             System.out.println("``` " + preStart.altText());
         } else if (line instanceof GemTextLine.PreformattedEnd) {
             System.out.println("```");
         } else if (line instanceof GemTextLine.Preformatted pre) {
             System.out.println(pre.value());
         } else if (line instanceof GemTextLine.Text text) {
-            System.out.println(text.value());
+            printWithLimitedWidth(System.out, text.value(), maxTextWidth);
         }
     }
 
@@ -118,5 +129,44 @@ final class TerminalPrinter {
         System.out.println(enabled
                 ? ansi().fg(color).a(message).reset()
                 : message);
+    }
+
+    void printWithLimitedWidth(PrintStream out, String text, int width) {
+        if (text.isEmpty()) {
+            out.println();
+            return;
+        }
+        final var breakWordWidthLimit = width - Math.min(12, width / 3);
+        var start = 0;
+        var end = width;
+        var len = text.length();
+        while (start < len) {
+            end = Math.min(len, end);
+            var isSpaceAtEnd = end > 1 && text.charAt(end - 1) == ' ';
+            if (!isSpaceAtEnd) {
+                var isSpaceAfterEnd = text.length() > end && text.charAt(end) == ' ';
+                if (!isSpaceAfterEnd) {
+                    // try to find a space from the end so we can keep words together
+                    var spaceIdx = text.lastIndexOf(' ', end);
+                    if (spaceIdx >= start + breakWordWidthLimit) {
+                        end = spaceIdx;
+                    }
+                }
+            }
+            out.println(text.substring(start, end).trim());
+
+            // ignore leading spaces in the next line
+            start = indexOfNonSpace(text, end);
+            end = start + width;
+        }
+    }
+
+    private static int indexOfNonSpace(String text, int from) {
+        for (int i = from; i < text.length(); i++) {
+            if (text.charAt(i) != ' ') {
+                return i;
+            }
+        }
+        return text.length();
     }
 }
