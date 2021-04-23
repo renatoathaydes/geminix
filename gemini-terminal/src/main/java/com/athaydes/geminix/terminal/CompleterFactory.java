@@ -25,7 +25,9 @@ public class CompleterFactory {
 
         return new Completers.TreeCompleter(
                 node(".help",
-                        node("help", "quit", "colors", "prompt", "bookmark", "bm", "certs")),
+                        node("help", "quit", "colors", "prompt", "bookmark", "bm", "certs", "width")),
+                node(".width"),
+                node(".q"),
                 node(".quit"),
                 node(".colors",
                         node("on", "off"),
@@ -37,7 +39,7 @@ public class CompleterFactory {
                         node("rm", bookmarkCompleter),
                         node("go", bookmarkCompleter),
                         bookmarkCompleter),
-                node(".bm",
+                node(".b",
                         node("add", "show"),
                         node("rm", bookmarkCompleter),
                         node("go", bookmarkCompleter),

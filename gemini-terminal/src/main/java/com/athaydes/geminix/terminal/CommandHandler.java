@@ -28,14 +28,17 @@ final class CommandHandler {
                         
             Geminix supports the following commands:
                         
+            * bookmark <args> - manages bookmarks.
+            * b <args>        - alias to bookmark.
+            * certs <args>    - manages TLS certificates.
+            * colors <args>   - manages output colors.
             * help            - shows this help message.
             * help <cmd>      - show help for a given command.
-            * colors <args>   - manages output colors.
+            * h               - alias to help.
             * prompt <p>      - sets the prompt.
-            * certs <args>    - manages TLS certificates.
-            * bookmark <args> - manages bookmarks.
-            * bm <args>       - alias to bookmark.
             * quit            - quits Geminix.
+            * q               - alias to quit.
+            * width [<chars>] - set max text width.
                         
             To enter a command, prefix it with a '.'.
                         
@@ -123,6 +126,12 @@ final class CommandHandler {
             The quit command exits Geminix.
             """;
 
+    private static final String WIDTH_HELP = """
+            The width command shows or sets the maximum width, in characters, of each text line of content.
+                        
+            The minimum width allowed is 10, and the maximum is 10_000.
+            """;
+
     private final TerminalPrinter printer;
     private final TlsCertificateStorage certificateStorage;
     private final ErrorHandler errorHandler;
@@ -156,11 +165,12 @@ final class CommandHandler {
             switch (cmd[0]) {
                 case "help" -> handleHelp(cmd);
                 case "colors" -> handleColors(cmd);
+                case "width" -> handleWidth(cmd);
                 case "prompt" -> handlePrompt(answer.substring("prompt".length()));
-                case "bookmark", "bm" -> handleBookmark(cmd);
+                case "bookmark", "b" -> handleBookmark(cmd);
                 case "certs" -> handleCerts(cmd);
                 default -> printer.error("Invalid command: " + answer);
-                case "quit" -> {
+                case "quit", "q" -> {
                     return true;
                 }
             }
@@ -220,8 +230,30 @@ final class CommandHandler {
             case "prompt" -> printer.info(PROMPT_HELP);
             case "bookmark", "bm" -> printer.info(BOOKMARK_HELP);
             case "certs" -> printer.info(CERTS_HELP);
+            case "width" -> printer.info(WIDTH_HELP);
             case "quit" -> printer.info(QUIT_HELP);
             default -> printer.error("Unknown command: " + cmd);
+        }
+    }
+
+    private void handleWidth(String[] cmd) {
+        if (cmd.length == 1) {
+            printer.info("The maximum width is set to " + printer.getMaxTextWidth() + " characters.");
+        } else if (cmd.length == 2) {
+            int newWidth;
+            try {
+                newWidth = Integer.parseInt(cmd[1]);
+            } catch (NumberFormatException e) {
+                printer.error("Bad argument, expected an integer value.");
+                return;
+            }
+            if (newWidth < 10 || newWidth > 10_000) {
+                printer.error("Width is out of range 10-10_000");
+            } else {
+                printer.setMaxTextWidth(newWidth);
+            }
+        } else {
+            printer.error("Missing argument for width command");
         }
     }
 
