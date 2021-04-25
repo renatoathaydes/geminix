@@ -1,5 +1,6 @@
 package com.athaydes.geminix.util;
 
+import com.athaydes.geminix.text.GemTextLine.Link;
 import com.athaydes.geminix.util.internal.UriHelper;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -33,5 +34,26 @@ public class UriHelperTest {
     @MethodSource
     public void uriCanBeGeminified(URIExample sample) throws URISyntaxException {
         assertEquals(URI.create(sample.expectedGeminifiedURI), UriHelper.geminify(sample.example()));
+    }
+
+    static Stream<Object[]> canAppendLinkToUri() {
+        return Stream.of(
+                new Object[]{"gemini://hi.com", "foo", "gemini://hi.com:1965/foo"},
+                new Object[]{"gemini://hi.com", "/foo", "gemini://hi.com:1965/foo"},
+                new Object[]{"gemini://hi.com/foo", "bar", "gemini://hi.com:1965/foo/bar"},
+                new Object[]{"gemini://hi.com/foo/", "bar", "gemini://hi.com:1965/foo/bar"},
+                new Object[]{"gemini://hi.com/foo", "/bar", "gemini://hi.com:1965/bar"},
+                new Object[]{"gemini://hi.com", "gemini://bye.com/", "gemini://bye.com:1965/"},
+                new Object[]{"gemini://hi.com", "gemini://bye.com:1964/foo?a=1&b=2", "gemini://bye.com:1964/foo?a=1&b=2"},
+                new Object[]{"gemini://hi.com/foo", "gemini://bye.com/zzz/", "gemini://bye.com:1965/zzz/"},
+                new Object[]{"gemini://hi.com:1967/foo/", "/zzz/?x=1", "gemini://hi.com:1967/zzz/?x=1"},
+                new Object[]{"gemini://hi.com:1967/foo/", "?x=1", "gemini://hi.com:1967/foo/?x=1"}
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    public void canAppendLinkToUri(String uri, String link, String expectedUri) throws URISyntaxException {
+        assertEquals(URI.create(expectedUri), UriHelper.appendLink(URI.create(uri), new Link(link, "")));
     }
 }

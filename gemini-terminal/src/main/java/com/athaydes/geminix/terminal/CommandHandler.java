@@ -2,7 +2,6 @@ package com.athaydes.geminix.terminal;
 
 import com.athaydes.geminix.client.Client;
 import com.athaydes.geminix.client.ErrorHandler;
-import com.athaydes.geminix.client.UserInteractionManager;
 import com.athaydes.geminix.tls.TlsCertificateStorage;
 import org.fusesource.jansi.Ansi;
 
@@ -35,6 +34,8 @@ final class CommandHandler {
             * help            - shows this help message.
             * help <cmd>      - show help for a given command.
             * h               - alias to help.
+            * link [<idx>]    - display links or follow a link.
+            * l               - alias to link.
             * prompt <p>      - sets the prompt.
             * quit            - quits Geminix.
             * q               - alias to quit.
@@ -72,6 +73,15 @@ final class CommandHandler {
             * cyan
             * white
             * default
+            """;
+
+    private static final String LINK_HELP = """
+            The link command is used to display the URL of, and follow links from the current page.
+                        
+            Links are displayed with an index between square brackets (e.g. [1]). To follow a link, pass the link \
+            index as an argument to the command.
+                        
+            When invoked without an argument, the link command will display all available links.
             """;
 
     private static final String HELP_HELP = """
@@ -135,7 +145,7 @@ final class CommandHandler {
     private final TerminalPrinter printer;
     private final TlsCertificateStorage certificateStorage;
     private final ErrorHandler errorHandler;
-    private final UserInteractionManager uim;
+    private final TerminalUserInteractionManager uim;
     private final BookmarksManager bookmarks;
     private final Client client;
 
@@ -143,7 +153,7 @@ final class CommandHandler {
                           TerminalPrinter printer,
                           ErrorHandler errorHandler,
                           BookmarksManager bookmarks,
-                          UserInteractionManager uim,
+                          TerminalUserInteractionManager uim,
                           Client client) {
         this.certificateStorage = certificateStorage;
         this.printer = printer;
@@ -168,6 +178,7 @@ final class CommandHandler {
                 case "width" -> handleWidth(cmd);
                 case "prompt" -> handlePrompt(answer.substring("prompt".length()));
                 case "bookmark", "b" -> handleBookmark(cmd);
+                case "link", "l" -> handleLink(cmd);
                 case "certs" -> handleCerts(cmd);
                 default -> printer.error("Invalid command: " + answer);
                 case "quit", "q" -> {
@@ -261,9 +272,41 @@ final class CommandHandler {
         printer.setPrompt(text.trim() + " ");
     }
 
+    private void handleLink(String[] cmd) {
+        var links = uim.getLinks();
+        if (cmd.length == 1) {
+            printer.info("The current page is " + uim.getCurrentUrl() +
+                    (links.isEmpty() ? ". It has no links." : " and it contains " + links.size() + " link" +
+                            (links.size() == 1 ? "" : "s")) + ":");
+            for (int i = 0; i < links.size(); i++) {
+                var link = links.get(i);
+                printer.info("* [" + i + "] " + link.url() + " - " + link.description());
+            }
+        } else if (cmd.length == 2) {
+            if (uim.getCurrentUrl() == null) {
+                printer.error("No URL visited yet, cannot follow any links.");
+                return;
+            }
+            int linkIndex;
+            try {
+                linkIndex = Integer.parseInt(cmd[1]);
+            } catch (NumberFormatException e) {
+                printer.error("Bad argument, expected an integer value.");
+                return;
+            }
+            if (linkIndex < links.size()) {
+                client.sendRequest(uim.getCurrentUrl(), links.get(linkIndex));
+            } else {
+                printer.error("Bad argument, integer value is out of range 0-" + (links.size() - 1) + ".");
+            }
+        } else {
+            printer.error("Too many arguments for link command.");
+        }
+    }
+
     private void handleBookmark(String[] cmd) {
         if (cmd.length < 2) {
-            printer.error("Missing arguments for bookmark command");
+            printer.error("Missing arguments for bookmark command.");
         } else {
             switch (cmd[1]) {
                 case "add" -> {

@@ -102,8 +102,14 @@ final class TerminalPrinter {
         print("ERROR: " + message, errorColor);
     }
 
+    void print(GemTextLine.Link link, int index) {
+        print("[" + index + "] → " + link.url() + " " + link.description(), linkColor, Ansi.Attribute.UNDERLINE);
+    }
+
     void print(GemTextLine line) {
-        if (line instanceof GemTextLine.Link link) {
+        if (line instanceof GemTextLine.Text text) {
+            print(text.value());
+        } else if (line instanceof GemTextLine.Link link) {
             print("→ " + link.url() + " " + link.description(), linkColor, Ansi.Attribute.UNDERLINE);
         } else if (line instanceof GemTextLine.Quote quote) {
             print("  " + quote.value(), quoteColor);
@@ -121,8 +127,6 @@ final class TerminalPrinter {
             print("```");
         } else if (line instanceof GemTextLine.Preformatted pre) {
             print(pre.value());
-        } else if (line instanceof GemTextLine.Text text) {
-            print(text.value());
         }
     }
 

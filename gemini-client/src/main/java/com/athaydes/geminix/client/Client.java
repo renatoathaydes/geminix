@@ -1,5 +1,6 @@
 package com.athaydes.geminix.client;
 
+import com.athaydes.geminix.text.GemTextLine;
 import com.athaydes.geminix.tls.TlsSocketFactory;
 import com.athaydes.geminix.util.internal.UriHelper;
 
@@ -40,6 +41,13 @@ public class Client {
         this.responseParser = responseParser;
     }
 
+    public void sendRequest(URI uri, GemTextLine.Link link) {
+        userInteractionManager.getErrorHandler().run(() -> {
+            sendRequest(UriHelper.appendLink(uri, link));
+            return null;
+        });
+    }
+
     public void sendRequest(String uri) {
         userInteractionManager.getErrorHandler().run(() -> {
             sendRequest(UriHelper.geminify(uri));
@@ -47,8 +55,8 @@ public class Client {
         });
     }
 
-    private void sendRequest(URI target) {
-        var currentUri = new AtomicReference<>(target);
+    private void sendRequest(URI uri) {
+        var currentUri = new AtomicReference<>(uri);
         userInteractionManager.getErrorHandler().run(() -> {
             var visitedURIs = new HashSet<URI>(2);
             while (true) {

@@ -4,6 +4,7 @@ import com.athaydes.geminix.client.ErrorHandler;
 import com.athaydes.geminix.client.Response;
 import com.athaydes.geminix.client.UserInteractionManager;
 import com.athaydes.geminix.terminal.tls.CachedTlsCertificateStorage;
+import com.athaydes.geminix.text.GemTextLine;
 import com.athaydes.geminix.text.GemTextParser;
 import com.athaydes.geminix.tls.TlsManager;
 import com.athaydes.geminix.util.MediaType;
@@ -20,8 +21,12 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Predicate;
+
+import static com.athaydes.geminix.terminal.Objects.MAX_LINKS;
 
 public final class TerminalUserInteractionManager
         implements UserInteractionManager, Closeable, AutoCloseable {
@@ -34,14 +39,20 @@ public final class TerminalUserInteractionManager
     private final MediaTypeParser mediaTypeParser;
     private final GemTextParser gemTextParser;
 
+    private URI requestedUrl;
+    private URI currentUrl;
+    private final List<GemTextLine.Link> links;
+
     TerminalUserInteractionManager(TerminalPrinter terminalPrinter,
                                    TerminalErrorHandler terminalErrorHandler,
                                    CachedTlsCertificateStorage certificateStorage,
-                                   CompleterFactory completerFactory) {
+                                   CompleterFactory completerFactory,
+                                   List<GemTextLine.Link> links) {
         this.printer = terminalPrinter;
         this.errorHandler = terminalErrorHandler;
         this.mediaTypeParser = new MediaTypeParser();
         this.gemTextParser = new GemTextParser();
+        this.links = links;
 
         try {
             this.terminal = TerminalBuilder.builder()
@@ -73,8 +84,17 @@ public final class TerminalUserInteractionManager
         return errorHandler;
     }
 
+    public URI getCurrentUrl() {
+        return currentUrl;
+    }
+
+    public List<GemTextLine.Link> getLinks() {
+        return Collections.unmodifiableList(links);
+    }
+
     @Override
     public void beforeRequest(URI target) {
+        requestedUrl = target;
         printer.info("Sending request to: " + target);
     }
 
@@ -136,7 +156,16 @@ public final class TerminalUserInteractionManager
         System.out.println();
 
         if (mediaType.isGeminiText()) {
-            gemTextParser.apply(reader.lines()).forEach(printer::print);
+            currentUrl = requestedUrl;
+            links.clear();
+            gemTextParser.apply(reader.lines()).forEach(line -> {
+                if (links.size() < MAX_LINKS && line instanceof GemTextLine.Link link) {
+                    printer.print(link, links.size());
+                    links.add(link);
+                } else {
+                    printer.print(line);
+                }
+            });
         } else {
             reader.lines().forEach(printer::print);
         }
