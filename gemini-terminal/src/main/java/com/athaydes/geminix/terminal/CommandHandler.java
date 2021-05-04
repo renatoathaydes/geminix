@@ -311,6 +311,7 @@ final class CommandHandler {
                             printer.error("Expected 'url' after link index.");
                         }
                     } else {
+                        uim.getHistory().add(destination.toString());
                         client.sendRequest(destination);
                     }
                     return null;
@@ -398,7 +399,10 @@ final class CommandHandler {
 
     private void handleGoToBookmark(String name) {
         bookmarks.get(name).ifPresentOrElse(
-                client::sendRequest,
+                uri -> {
+                    uim.getHistory().add(uri);
+                    client.sendRequest(uri);
+                },
                 () -> printer.error("bookmark does not exist: '" + name + "'."));
     }
 

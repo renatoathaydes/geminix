@@ -9,6 +9,7 @@ import com.athaydes.geminix.text.GemTextParser;
 import com.athaydes.geminix.tls.TlsManager;
 import com.athaydes.geminix.util.MediaType;
 import com.athaydes.geminix.util.MediaTypeParser;
+import org.jline.reader.History;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.terminal.Terminal;
@@ -90,6 +91,10 @@ public final class TerminalUserInteractionManager
 
     public List<GemTextLine.Link> getLinks() {
         return Collections.unmodifiableList(links);
+    }
+
+    History getHistory() {
+        return lineReader.getHistory();
     }
 
     @Override
