@@ -12,7 +12,9 @@ public final class Geminix {
         var commandHandler = Objects.commandHandler;
         var client = Objects.client;
 
-        uim.promptUser("Enter a URL or command (enter '.help' for help, '.quit' to exit):", (userAnswer) -> {
+        System.out.println("Enter a URL or command (enter '.help' for help, '.quit' to exit, Tab for auto-completion).");
+
+        uim.promptUser("", (userAnswer) -> {
             var answer = userAnswer.trim();
             var done = false;
             if (answer.startsWith(".")) {

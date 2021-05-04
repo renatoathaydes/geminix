@@ -102,7 +102,7 @@ public final class TerminalUserInteractionManager
     public void promptUser(String message, Predicate<String> acceptResponse) {
         var done = false;
         do {
-            printer.prompt(message);
+            if (!message.isBlank()) printer.prompt(message);
             var userResponse = lineReader.readLine(printer.prompt());
             done = acceptResponse.test(userResponse);
         } while (!done);
