@@ -12,16 +12,16 @@ import static org.fusesource.jansi.Ansi.ansi;
 final class TerminalPrinter {
     private boolean enabled = true;
     private int maxTextWidth = 120;
-    private Color promptColor = MAGENTA;
-    private Color infoColor = MAGENTA;
-    private Color warnColor = YELLOW;
-    private Color errorColor = RED;
-    private Color linkColor = CYAN;
-    private Color h1Color = BLUE;
-    private Color h2Color = BLUE;
-    private Color h3Color = BLUE;
-    private Color quoteColor = DEFAULT;
-    private Color listColor = DEFAULT;
+    Color promptColor = MAGENTA;
+    Color infoColor = MAGENTA;
+    Color warnColor = YELLOW;
+    Color errorColor = RED;
+    Color linkColor = CYAN;
+    Color h1Color = BLUE;
+    Color h2Color = BLUE;
+    Color h3Color = BLUE;
+    Color quoteColor = DEFAULT;
+    Color listColor = DEFAULT;
     private String prompt = "> ";
 
     public int getMaxTextWidth() {
@@ -103,7 +103,8 @@ final class TerminalPrinter {
     }
 
     void print(GemTextLine.Link link, int index) {
-        print("[" + index + "] → " + link.url() + " " + link.description(), linkColor, Ansi.Attribute.UNDERLINE);
+        var desc = link.description().isBlank() ? link.url() : link.description();
+        print("[" + index + "] → " + desc, linkColor, Ansi.Attribute.UNDERLINE);
     }
 
     void print(GemTextLine line) {

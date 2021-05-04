@@ -36,11 +36,12 @@ public class CompleterFactory {
 
         return new Completers.TreeCompleter(
                 node(".help",
-                        node("help", "quit", "colors", "prompt", "bookmark", "bm", "link", "certs", "width")),
+                        node("help", "quit", "colors", "prompt", "bookmark", "link", "certs", "width")),
                 node(".width"),
                 node(".q"),
                 node(".quit"),
                 node(".link", linksCompleter),
+                node(".l", linksCompleter),
                 node(".colors",
                         node("on", "off"),
                         node("info", "warn", "error", "prompt", "h1", "h2", "h3", "link", "list", "quote",

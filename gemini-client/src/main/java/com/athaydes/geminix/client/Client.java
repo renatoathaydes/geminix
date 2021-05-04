@@ -41,11 +41,8 @@ public class Client {
         this.responseParser = responseParser;
     }
 
-    public void sendRequest(URI uri, GemTextLine.Link link) {
-        userInteractionManager.getErrorHandler().run(() -> {
-            sendRequest(UriHelper.appendLink(uri, link));
-            return null;
-        });
+    public URI getLinkDestination(URI uri, GemTextLine.Link link) throws URISyntaxException {
+        return UriHelper.appendLink(uri, link);
     }
 
     public void sendRequest(String uri) {
@@ -55,7 +52,7 @@ public class Client {
         });
     }
 
-    private void sendRequest(URI uri) {
+    public void sendRequest(URI uri) {
         var currentUri = new AtomicReference<>(uri);
         userInteractionManager.getErrorHandler().run(() -> {
             var visitedURIs = new HashSet<URI>(2);

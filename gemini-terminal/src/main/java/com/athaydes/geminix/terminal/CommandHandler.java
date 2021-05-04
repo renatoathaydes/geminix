@@ -79,7 +79,11 @@ final class CommandHandler {
             The link command is used to display the URL of, and follow links from the current page.
                         
             Links are displayed with an index between square brackets (e.g. [1]). To follow a link, pass the link \
-            index as an argument to the command.
+            index as an argument to this command.
+                        
+            To display the URL a link refers to, write 'url' after the index. For example:
+                        
+            > .link 3 url
                         
             When invoked without an argument, the link command will display all available links.
             """;
@@ -239,9 +243,10 @@ final class CommandHandler {
             case "colors" -> printer.info(COLORS_HELP);
             case "help" -> printer.info(HELP_HELP);
             case "prompt" -> printer.info(PROMPT_HELP);
-            case "bookmark", "bm" -> printer.info(BOOKMARK_HELP);
+            case "bookmark" -> printer.info(BOOKMARK_HELP);
             case "certs" -> printer.info(CERTS_HELP);
             case "width" -> printer.info(WIDTH_HELP);
+            case "link" -> printer.info(LINK_HELP);
             case "quit" -> printer.info(QUIT_HELP);
             default -> printer.error("Unknown command: " + cmd);
         }
@@ -276,13 +281,14 @@ final class CommandHandler {
         var links = uim.getLinks();
         if (cmd.length == 1) {
             printer.info("The current page is " + uim.getCurrentUrl() +
-                    (links.isEmpty() ? ". It has no links." : " and it contains " + links.size() + " link" +
-                            (links.size() == 1 ? "" : "s")) + ":");
+                    (links.isEmpty()
+                            ? ". It has no links."
+                            : " and it contains " + links.size() + " link" + (links.size() == 1 ? "" : "s") + ":\n"));
             for (int i = 0; i < links.size(); i++) {
                 var link = links.get(i);
-                printer.info("* [" + i + "] " + link.url() + " - " + link.description());
+                printer.print(link, i);
             }
-        } else if (cmd.length == 2) {
+        } else if (cmd.length == 2 || cmd.length == 3) {
             if (uim.getCurrentUrl() == null) {
                 printer.error("No URL visited yet, cannot follow any links.");
                 return;
@@ -295,7 +301,21 @@ final class CommandHandler {
                 return;
             }
             if (linkIndex < links.size()) {
-                client.sendRequest(uim.getCurrentUrl(), links.get(linkIndex));
+                uim.getErrorHandler().run(() -> {
+                    var destination = client.getLinkDestination(uim.getCurrentUrl(), links.get(linkIndex));
+                    if (cmd.length == 3) {
+                        if (cmd[2].equalsIgnoreCase("url")) {
+                            printer.print(links.get(linkIndex), linkIndex);
+                            printer.print("  " + destination, printer.linkColor);
+                        } else {
+                            printer.error("Expected 'url' after link index.");
+                        }
+                    } else {
+                        client.sendRequest(destination);
+                    }
+                    return null;
+                });
+
             } else {
                 printer.error("Bad argument, integer value is out of range 0-" + (links.size() - 1) + ".");
             }
