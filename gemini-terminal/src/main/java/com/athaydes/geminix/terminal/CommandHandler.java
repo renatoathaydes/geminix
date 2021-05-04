@@ -2,9 +2,11 @@ package com.athaydes.geminix.terminal;
 
 import com.athaydes.geminix.client.Client;
 import com.athaydes.geminix.client.ErrorHandler;
+import com.athaydes.geminix.text.GemTextLine.Link;
 import com.athaydes.geminix.tls.TlsCertificateStorage;
 import org.fusesource.jansi.Ansi;
 
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -301,28 +303,35 @@ final class CommandHandler {
                 return;
             }
             if (linkIndex < links.size()) {
-                uim.getErrorHandler().run(() -> {
-                    var destination = client.getLinkDestination(uim.getCurrentUrl(), links.get(linkIndex));
-                    if (cmd.length == 3) {
-                        if (cmd[2].equalsIgnoreCase("url")) {
-                            printer.print(links.get(linkIndex), linkIndex);
-                            printer.print("  " + destination, printer.linkColor);
-                        } else {
-                            printer.error("Expected 'url' after link index.");
-                        }
-                    } else {
-                        uim.getHistory().add(destination.toString());
-                        client.sendRequest(destination);
-                    }
-                    return null;
-                });
-
+                uim.getErrorHandler().run(() -> handleLink(cmd, links.get(linkIndex), linkIndex));
             } else {
                 printer.error("Bad argument, integer value is out of range 0-" + (links.size() - 1) + ".");
             }
         } else {
             printer.error("Too many arguments for link command.");
         }
+    }
+
+    private Object handleLink(String[] cmd, Link link, int linkIndex) throws URISyntaxException {
+        var destination = client.getLinkDestination(uim.getCurrentUrl(), link);
+        var isGemini = "gemini".equals(destination.getScheme());
+        if (cmd.length == 3) {
+            if (cmd[2].equalsIgnoreCase("url")) {
+                printer.print(link, linkIndex);
+                printer.print("  " + destination, printer.linkColor);
+                if (!isGemini) {
+                    printer.warn("Link cannot be followed as it does not use the gemini protocol.");
+                }
+            } else {
+                printer.error("Expected 'url' after link index.");
+            }
+        } else if (isGemini) {
+            uim.getHistory().add(destination.toString());
+            client.sendRequest(destination);
+        } else {
+            printer.error("Cannot follow non-gemini link (protocol is '" + destination.getScheme() + "')");
+        }
+        return null;
     }
 
     private void handleBookmark(String[] cmd) {

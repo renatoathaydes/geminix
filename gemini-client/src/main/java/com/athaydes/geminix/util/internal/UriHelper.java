@@ -11,7 +11,7 @@ import static com.athaydes.geminix.util.internal.SpecialCharacters.URL_ENCODED_E
 
 public final class UriHelper {
 
-    private static final Pattern URI_PATTERN = Pattern.compile("([a-z]+)://.*");
+    private static final Pattern ABSOLUTE_URI_PATTERN = Pattern.compile("([a-z]+)://.*");
 
     public static URI appendQuery(URI target, String userAnswer) {
         String query = target.getQuery();
@@ -33,7 +33,7 @@ public final class UriHelper {
     }
 
     public static URI geminify(String uri) throws URISyntaxException {
-        var matcher = URI_PATTERN.matcher(uri);
+        var matcher = ABSOLUTE_URI_PATTERN.matcher(uri);
         if (matcher.matches()) {
             var scheme = matcher.group(1);
             if (!"gemini".equals(scheme)) {
@@ -50,8 +50,16 @@ public final class UriHelper {
                 target.getRawPath(), target.getRawQuery(), target.getRawFragment());
     }
 
-    public static URI appendLink(URI uri,
-                                 GemTextLine.Link link) throws URISyntaxException {
+    /**
+     * Simplified method to append a link to a URI which is assumed to be a gemini URI (i.e. the scheme is gemini://).
+     *
+     * @param uri  gemini URI
+     * @param link link to append to URI or replace it entirely if absolute
+     * @return the link full URI
+     * @throws URISyntaxException if the link does not form a valid URI
+     */
+    public static URI appendLink(URI uri, GemTextLine.Link link)
+            throws URISyntaxException {
         var target = link.url();
 
         // target is absolute path
@@ -60,9 +68,14 @@ public final class UriHelper {
                     ":" + toGeminiPortIfNone(uri) + target);
         }
 
+        var matcher = ABSOLUTE_URI_PATTERN.matcher(target);
+
         // target is full URI
-        if (URI_PATTERN.matcher(target).matches()) {
-            return geminify(target);
+        if (matcher.matches()) {
+            if ("gemini".equals(matcher.group(1))) {
+                return geminify(target);
+            }
+            return URI.create(target);
         }
 
         // target is relative path

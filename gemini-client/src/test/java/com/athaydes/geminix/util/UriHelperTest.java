@@ -47,7 +47,8 @@ public class UriHelperTest {
                 new Object[]{"gemini://hi.com", "gemini://bye.com:1964/foo?a=1&b=2", "gemini://bye.com:1964/foo?a=1&b=2"},
                 new Object[]{"gemini://hi.com/foo", "gemini://bye.com/zzz/", "gemini://bye.com:1965/zzz/"},
                 new Object[]{"gemini://hi.com:1967/foo/", "/zzz/?x=1", "gemini://hi.com:1967/zzz/?x=1"},
-                new Object[]{"gemini://hi.com:1967/foo/", "?x=1", "gemini://hi.com:1967/foo/?x=1"}
+                new Object[]{"gemini://hi.com:1967/foo/", "?x=1", "gemini://hi.com:1967/foo/?x=1"},
+                new Object[]{"gemini://hi.com/", "http://foo.com", "http://foo.com"}
         );
     }
 
