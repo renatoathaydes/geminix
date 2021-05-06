@@ -119,11 +119,11 @@ final class CommandHandler {
                         
             It accepts the following arguments:
                         
-            * add <name> <url> - create a bookmark.
-            * rm <name>        - remove a bookmark.
-            * show             - show all bookmarks.
-            * go <name>        - send a request to the URL associated with the given bookmark.
-            * <name>           - same as 'go <name>' as long as <name> is not a sub-command.
+            * add <name> [<url>] - create a bookmark.
+            * rm <name>          - remove a bookmark.
+            * show               - show all bookmarks.
+            * go <name>          - send a request to the URL associated with the given bookmark.
+            * <name>             - same as 'go <name>' as long as <name> is not a sub-command.
                         
             To open the URL associated with a bookmark, simply type '.bm <name>'.
                         
@@ -131,11 +131,14 @@ final class CommandHandler {
                         
             ```
             # Add bookmark
-            .bm add gmn gemini.circumlunar.space/
+            .b add gmn gemini.circumlunar.space/
                         
             # Navigate to the bookmarked URL
-            .bm gmn
+            .b gmn
             ```
+                        
+            If no URL is given to the add sub-command, the current URL is used.
+            In other words, to bookmark the current URL, type `.b bookmark-name`.
             """;
 
     private static final String QUIT_HELP = """
@@ -340,10 +343,18 @@ final class CommandHandler {
         } else {
             switch (cmd[1]) {
                 case "add" -> {
-                    if (cmd.length == 4) {
-                        handleAddBookmark(cmd[2], cmd[3]);
-                    } else {
-                        printer.error("'bookmark add' sub-command takes 2 arguments.");
+                    switch (cmd.length) {
+                        case 3 -> {
+                            var url = uim.getCurrentUrl();
+                            if (url == null) {
+                                printer.error("No URL has been visited yet. Give an URL explicitly, or visit a URL " +
+                                        "before bookmarking it.");
+                            } else {
+                                handleAddBookmark(cmd[2], url.toString());
+                            }
+                        }
+                        case 4 -> handleAddBookmark(cmd[2], cmd[3]);
+                        default -> printer.error("'bookmark add' sub-command takes 2 or 3 arguments.");
                     }
                 }
                 case "rm" -> {
@@ -382,7 +393,7 @@ final class CommandHandler {
         errorHandler.run(() -> {
             var done = bookmarks.add(name, url);
             if (done) printer.info("Bookmark added.");
-            else printer.warn("Bookmark already exists. To change it, first remove it, then add it again.");
+            else printer.warn("Bookmark name already exists. To change it, first remove it, then add it again.");
             return null;
         });
     }
