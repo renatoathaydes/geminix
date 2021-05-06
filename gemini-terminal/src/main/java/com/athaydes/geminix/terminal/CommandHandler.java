@@ -16,6 +16,8 @@ import java.util.stream.Stream;
 
 final class CommandHandler {
     private static final String HELP = """
+            # Geminix Help
+            
             Geminix is a Gemini Client.
                        
             You can use it to navigate the Geminspace, much like you can use a web browser to navigate the WWW.
@@ -26,6 +28,8 @@ final class CommandHandler {
             => gemini.circumlunar.space/
             => geminispace.info/
             => gemini://tobykurien.com/
+            
+            ## Commands
                         
             Geminix supports the following commands:
                         
@@ -52,6 +56,8 @@ final class CommandHandler {
             """;
 
     private static final String COLORS_HELP = """
+            # Colors Command
+            
             The 'colors' command accepts the following arguments:
                         
             * <item> <color>   - set the color to use for an item.
@@ -78,7 +84,9 @@ final class CommandHandler {
             """;
 
     private static final String LINK_HELP = """
-            The link command is used to display the URL of, and follow links from the current page.
+            # Link Command
+            
+            The link (l) command is used to display the URL of, and follow links from the current page.
                         
             Links are displayed with an index between square brackets (e.g. [1]). To follow a link, pass the link \
             index as an argument to this command.
@@ -91,6 +99,8 @@ final class CommandHandler {
             """;
 
     private static final String HELP_HELP = """
+            # Help Command
+            
             The help command can be called with zero or one argument.
                         
             Without an argument, it prints the Geminix main help page.
@@ -99,10 +109,14 @@ final class CommandHandler {
             """;
 
     private static final String PROMPT_HELP = """
+            # Prompt Command
+            
             The prompt command changes the prompt which is displayed when Geminix expects user input.
             """;
 
     private static final String CERTS_HELP = """
+            # Certs Command
+            
             The certs command can be used to manage TLS certificates.
                         
             It accepts the following arguments:
@@ -115,7 +129,9 @@ final class CommandHandler {
             """;
 
     private static final String BOOKMARK_HELP = """
-            The bookmark (bm) command is used to manage and use bookmarks.
+            # Bookmark Command
+            
+            The bookmark (b) command is used to manage and use bookmarks.
                         
             It accepts the following arguments:
                         
@@ -142,10 +158,14 @@ final class CommandHandler {
             """;
 
     private static final String QUIT_HELP = """
-            The quit command exits Geminix.
+            # Quit Command
+            
+            The quit (q) command exits Geminix.
             """;
 
     private static final String WIDTH_HELP = """
+            # Width Command
+            
             The width command shows or sets the maximum width, in characters, of each text line of content.
                         
             The minimum width allowed is 10, and the maximum is 10_000.
@@ -198,9 +218,13 @@ final class CommandHandler {
         return false;
     }
 
+    private void printGeminiText(String text) {
+        uim.getGemTextParser().apply(text.lines()).forEach(printer::print);
+    }
+
     private void handleHelp(String[] cmd) {
         switch (cmd.length) {
-            case 1 -> printer.info(HELP);
+            case 1 -> printGeminiText(HELP);
             case 2 -> handleHelpFor(cmd[1]);
             default -> printer.error("help command takes 0 or 1 arguments.");
         }
@@ -245,14 +269,14 @@ final class CommandHandler {
 
     private void handleHelpFor(String cmd) {
         switch (cmd) {
-            case "colors" -> printer.info(COLORS_HELP);
-            case "help" -> printer.info(HELP_HELP);
-            case "prompt" -> printer.info(PROMPT_HELP);
-            case "bookmark" -> printer.info(BOOKMARK_HELP);
-            case "certs" -> printer.info(CERTS_HELP);
-            case "width" -> printer.info(WIDTH_HELP);
-            case "link" -> printer.info(LINK_HELP);
-            case "quit" -> printer.info(QUIT_HELP);
+            case "colors" -> printGeminiText(COLORS_HELP);
+            case "help" -> printGeminiText(HELP_HELP);
+            case "prompt" -> printGeminiText(PROMPT_HELP);
+            case "bookmark" -> printGeminiText(BOOKMARK_HELP);
+            case "certs" -> printGeminiText(CERTS_HELP);
+            case "width" -> printGeminiText(WIDTH_HELP);
+            case "link" -> printGeminiText(LINK_HELP);
+            case "quit" -> printGeminiText(QUIT_HELP);
             default -> printer.error("Unknown command: " + cmd);
         }
     }
@@ -285,7 +309,7 @@ final class CommandHandler {
     private void handleLink(String[] cmd) {
         var links = uim.getLinks();
         if (cmd.length == 1) {
-            printer.info("The current page is " + uim.getCurrentUrl() +
+            printGeminiText("The current page is " + uim.getCurrentUrl() +
                     (links.isEmpty()
                             ? ". It has no links."
                             : " and it contains " + links.size() + " link" + (links.size() == 1 ? "" : "s") + ":\n"));
@@ -409,12 +433,12 @@ final class CommandHandler {
 
     private void handleShowBookmarks() {
         var all = bookmarks.getAll();
-        printer.info("You have " + all.size() + " bookmark" +
+        printGeminiText("You have " + all.size() + " bookmark" +
                 (all.size() == 1 ? "" : "s") +
                 (all.size() == 0 ? ".\nTo add one, type '.bm add <name> <url>'." : ":\n"));
         all.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
-                .forEach(entry -> printer.info("* " + entry.getKey() + " - " + entry.getValue()));
+                .forEach(entry -> printGeminiText("* " + entry.getKey() + " - " + entry.getValue()));
     }
 
     private void handleGoToBookmark(String name) {
@@ -511,7 +535,7 @@ final class CommandHandler {
             } else {
                 for (String hostKey : hostKeys.stream().sorted().toList()) {
                     certificateStorage.load(hostKey).ifPresent(certificate ->
-                            printer.info("Certificate for host '" + hostKey + "':\n" + certificate));
+                            printGeminiText("Certificate for host '" + hostKey + "':\n" + certificate));
                 }
             }
             return null;
@@ -524,10 +548,10 @@ final class CommandHandler {
             if (hosts.isEmpty()) {
                 printer.info("You have not cached any certificate yet.");
             } else {
-                printer.info("You have cached certificates for the following " + hosts.size() + " host" +
+                printGeminiText("You have cached certificates for the following " + hosts.size() + " host" +
                         (hosts.size() == 1 ? "" : "s") + ":");
                 for (String host : hosts) {
-                    printer.info("  * " + host);
+                    printGeminiText("* " + host);
                 }
             }
             return null;

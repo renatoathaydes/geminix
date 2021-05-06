@@ -85,6 +85,10 @@ public final class TerminalUserInteractionManager
         return errorHandler;
     }
 
+    public GemTextParser getGemTextParser() {
+        return gemTextParser;
+    }
+
     public URI getCurrentUrl() {
         return currentUrl;
     }
