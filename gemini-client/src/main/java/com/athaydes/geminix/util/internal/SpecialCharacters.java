@@ -16,6 +16,5 @@ public sealed interface SpecialCharacters permits SpecialCharacters.Nothing {
     int ASCII_8 = 56;
     int ASCII_9 = 57;
 
-    String URL_ENCODED_EQUALS = "%3D";
     String URL_ENCODED_AMPERSAND = "%26";
 }

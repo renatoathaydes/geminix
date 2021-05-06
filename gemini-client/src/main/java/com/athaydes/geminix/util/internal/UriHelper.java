@@ -7,7 +7,6 @@ import java.net.URISyntaxException;
 import java.util.regex.Pattern;
 
 import static com.athaydes.geminix.util.internal.SpecialCharacters.URL_ENCODED_AMPERSAND;
-import static com.athaydes.geminix.util.internal.SpecialCharacters.URL_ENCODED_EQUALS;
 
 public final class UriHelper {
 
@@ -21,7 +20,7 @@ public final class UriHelper {
             query += URL_ENCODED_AMPERSAND;
         }
 
-        query += "q" + URL_ENCODED_EQUALS + userAnswer;
+        query += userAnswer;
 
         try {
             return new URI(target.getScheme(), null, target.getHost(), target.getPort(),
