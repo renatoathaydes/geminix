@@ -9,6 +9,7 @@ final class Files {
     private final Path certificates;
     private final Path history;
     private final Path bookmarks;
+    private final Path startup;
 
     private Files() {
         var geminixHome = System.getenv().getOrDefault("GEMINIX_HOME",
@@ -16,6 +17,7 @@ final class Files {
         certificates = Paths.get(geminixHome, "certs");
         history = Paths.get(geminixHome, "history");
         bookmarks = Paths.get(geminixHome, "bookmarks");
+        startup = Paths.get(geminixHome, "startup");
     }
 
     Path getCertificates() {
@@ -28,5 +30,9 @@ final class Files {
 
     Path getBookmarks() {
         return bookmarks;
+    }
+
+    Path getStartup() {
+        return startup;
     }
 }
