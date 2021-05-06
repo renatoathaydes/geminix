@@ -39,6 +39,7 @@ public interface TlsSocketFactory {
             var socket = (SSLSocket) sslContext.getSocketFactory()
                     .createSocket(host, port);
             socket.setEnabledProtocols(PROTOCOLS);
+            socket.setSoTimeout(10_000);
             return socket;
         }
     }
