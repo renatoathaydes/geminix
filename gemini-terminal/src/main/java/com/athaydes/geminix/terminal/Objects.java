@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class Objects {
-    static final int MAX_LINKS = 256;
+    static final int MAX_LINKS = 1024;
 
     private static final List<GemTextLine.Link> links = new ArrayList<>(MAX_LINKS);
 
