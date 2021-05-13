@@ -5,7 +5,6 @@ import com.athaydes.geminix.client.Response;
 import com.athaydes.geminix.client.UserInteractionManager;
 import com.athaydes.geminix.tls.TlsManager;
 
-import java.io.IOException;
 import java.net.URI;
 import java.security.cert.X509Certificate;
 import java.util.Optional;
@@ -29,7 +28,7 @@ public class BrowserUserInteractionManager implements UserInteractionManager {
     }
 
     @Override
-    public void showResponse(Response response) throws IOException {
+    public void showResponse(Response response) {
         responseConsumer.accept(response);
     }
 

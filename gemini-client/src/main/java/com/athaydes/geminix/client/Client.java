@@ -23,6 +23,7 @@ public class Client {
     private final UserInteractionManager userInteractionManager;
     private final TlsSocketFactory socketFactory;
     private final ResponseParser responseParser;
+    private boolean autoCloseSuccessResponseBody = true;
 
     public Client(UserInteractionManager userInteractionManager) {
         this(userInteractionManager, TlsSocketFactory.defaultFactory());
@@ -39,6 +40,10 @@ public class Client {
         this.userInteractionManager = userInteractionManager;
         this.socketFactory = socketFactory;
         this.responseParser = responseParser;
+    }
+
+    public void setAutoCloseSuccessResponseBody(boolean autoCloseSuccessResponseBody) {
+        this.autoCloseSuccessResponseBody = autoCloseSuccessResponseBody;
     }
 
     public URI getLinkDestination(URI uri, GemTextLine.Link link) throws URISyntaxException {
@@ -71,8 +76,8 @@ public class Client {
                     } catch (UncheckedIOException e) {
                         throw e.getCause();
                     } finally {
-                        // success responses keep a reference to the socket's stream and must be explicitly closed
-                        if (response instanceof Response.Success success) {
+                        if (autoCloseSuccessResponseBody &&
+                                response instanceof Response.Success success) {
                             success.body().close();
                         }
                     }
